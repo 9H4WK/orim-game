@@ -9,6 +9,7 @@ const nextConfig = {
       ],
     },
   ],
+  turbopack: {}, // Suppress Next.js 16 warning when using custom webpack config
   webpack: (config, { isServer }) => {
     // Wallet adapter polyfills
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
