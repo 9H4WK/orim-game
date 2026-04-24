@@ -10,7 +10,7 @@ import {
   mplTokenMetadata 
 } from '@metaplex-foundation/mpl-token-metadata';
 import { generateSigner, publicKey, percentAmount } from '@metaplex-foundation/umi';
-import { SolanaAgentKit, createSolanaTools } from "solana-agent-kit";
+import { SolanaAgentKit } from "solana-agent-kit";
 
 export interface MazeAgentConfig {
   name: string;
