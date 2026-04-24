@@ -34,7 +34,7 @@ export default function ArchitectPage() {
   const agentService = useMemo(() => {
     if (!wallet.publicKey || !mounted) return null;
     return new MazeAgentService(connection.rpcEndpoint, wallet, "sk-placeholder");
-  }, [connection.rpcEndpoint, wallet.publicKey, mounted]);
+  }, [connection.rpcEndpoint, wallet, mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -187,7 +187,7 @@ export default function ArchitectPage() {
                 
                 <div className={styles.evolutionBox}>
                   <p className={styles.loreText}>
-                    "The Labyrinth senses your presence. It will now begin to evolve based on the world's pulse."
+                    &quot;The Labyrinth senses your presence. It will now begin to evolve based on the world&apos;s pulse.&quot;
                   </p>
                   
                   <button 

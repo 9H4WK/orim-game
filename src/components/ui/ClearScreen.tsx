@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './ClearScreen.module.css';
 import { getItemById } from '@/lib/shop/items';
@@ -53,6 +53,19 @@ export default function ClearScreen({
   const [txId, setTxId] = useState<string | null>(null);
   const confettiRef = useRef(false);
 
+  const syncResult = useCallback(async () => {
+    setStatusText('TRANSMITTING TO SOLANA LEDGER...');
+    try {
+      const service = new OrimBlockchainService(connection, wallet!);
+      const sig = await service.recordStageClear(stage, stars);
+      setTxId(sig);
+      setStatusText('SYNC COMPLETE: STARDUST SECURED');
+    } catch (e: any) {
+      console.error('Sync error:', e);
+      setStatusText('SYNC FAILED: RETRY IN VAULT');
+    }
+  }, [connection, wallet, stage, stars]);
+
   useEffect(() => {
     const delays = [600, 1000, 1400];
     delays.slice(0, stars).forEach((delay, i) => {
@@ -68,19 +81,6 @@ export default function ClearScreen({
       }
     }, 1900);
 
-    const syncResult = async () => {
-      setStatusText('TRANSMITTING TO SOLANA LEDGER...');
-      try {
-        const service = new OrimBlockchainService(connection, wallet!);
-        const sig = await service.recordStageClear(stage, stars);
-        setTxId(sig);
-        setStatusText('SYNC COMPLETE: STARDUST SECURED');
-      } catch (e: any) {
-        console.error('Sync error:', e);
-        setStatusText('SYNC FAILED: RETRY IN VAULT');
-      }
-    };
-
     if (!confettiRef.current) {
       confettiRef.current = true;
       import('canvas-confetti').then((mod) => {
@@ -94,7 +94,7 @@ export default function ClearScreen({
         })();
       });
     }
-  }, [stars]);
+  }, [stars, wallet, syncResult]);
 
   return (
     <div className={`${styles.overlay} scanlines`}>

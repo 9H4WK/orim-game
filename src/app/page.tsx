@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -41,9 +41,9 @@ export default function HomePage() {
     if (connected && wallet && publicKey) {
       checkProfile(publicKey);
     }
-  }, [connected, wallet, publicKey]);
+  }, [connected, wallet, publicKey, checkProfile]);
 
-  const checkProfile = async (pubkey: PublicKey) => {
+  const checkProfile = useCallback(async (pubkey: PublicKey) => {
     try {
       const service = new OrimBlockchainService(connection, wallet!);
       
@@ -61,7 +61,7 @@ export default function HomePage() {
       console.warn('On-Chain Check Failed (Expected if not deployed):', e);
       setProfileExists(false);
     }
-  };
+  }, [connection, wallet]);
 
   const handleInitProfile = async () => {
     if (!wallet) return;
