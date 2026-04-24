@@ -159,7 +159,13 @@ export default function CustomMazeEditor() {
       }))
     );
 
-    setSimMaze({ width: GRID_SIZE, height: GRID_SIZE, grid: mazeGrid });
+    setSimMaze({ 
+      width: GRID_SIZE, 
+      height: GRID_SIZE, 
+      grid: mazeGrid,
+      junctions: [], // Not strictly needed for custom simulation
+      solution: []  // Not strictly needed for custom simulation
+    });
     setSimPlayer({ x: startX, y: startY >= 0 ? startY : 0 });
     setSimLastDir(null);
     setSimDir('down');
