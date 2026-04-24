@@ -34,7 +34,7 @@ export class OrimBlockchainService {
   /**
    * Find User Profile PDA
    */
-  async getUserProfilePda(walletAddress: PublicKey) {
+  async getUserProfilePda(walletAddress: PublicKey): Promise<PublicKey> {
     if (this.isSandbox) return new PublicKey('11111111111111111111111111111111');
     const [pda] = PublicKey.findProgramAddressSync(
       [Buffer.from('user_profile'), walletAddress.toBuffer()],
@@ -46,7 +46,7 @@ export class OrimBlockchainService {
   /**
    * Initialize a new user profile on-chain (or sandbox)
    */
-  async initializeUserProfile() {
+  async initializeUserProfile(): Promise<string> {
     console.log(`Blockchain [${this.isSandbox ? 'SANDBOX' : 'REAL'}]: Initializing User Profile...`);
     
     if (this.isSandbox) {
@@ -71,7 +71,7 @@ export class OrimBlockchainService {
   /**
    * Record a stage clear result
    */
-  async recordStageClear(stage: number, stars: number) {
+  async recordStageClear(stage: number, stars: number): Promise<string> {
     const xp = stage * 100;
     console.log(`Blockchain [${this.isSandbox ? 'SANDBOX' : 'REAL'}]: Recording Stage ${stage}...`);
     
@@ -94,7 +94,7 @@ export class OrimBlockchainService {
   /**
    * Purchase an item
    */
-  async purchaseWithSol(amountLamports: number, itemId: string) {
+  async purchaseWithSol(amountLamports: number, itemId: string): Promise<string> {
     if (this.isSandbox) {
       await new Promise(r => setTimeout(r, 1200));
       return 'sandbox_tx_purchase_success';
@@ -106,7 +106,7 @@ export class OrimBlockchainService {
       .rpc();
   }
 
-  async purchaseWithUsdc(amountUsdc: number, itemId: string, wallet: AnchorWallet, connection: Connection) {
+  async purchaseWithUsdc(amountUsdc: number, itemId: string, wallet: AnchorWallet, connection: Connection): Promise<string> {
     if (this.isSandbox) {
       await new Promise(r => setTimeout(r, 1200));
       return 'sandbox_tx_purchase_usdc_success';
@@ -119,6 +119,6 @@ export class OrimBlockchainService {
       createTransferInstruction(userAta, treasuryAta, wallet.publicKey, amountUsdc * 1e6)
     );
 
-    return await wallet.sendTransaction(tx, connection);
+    return await this.provider.sendAndConfirm(tx);
   }
 }
