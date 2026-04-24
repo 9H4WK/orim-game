@@ -21,7 +21,7 @@ In ORIM, the labyrinth isn't just a static stage—it's a **Sovereign Agent**. E
 - **Metaplex Core Integration**: Utilizing the next-generation NFT standard for low-cost, high-performance autonomous assets.
 - **Autonomous Architect (AI)**: Integrated **Solana Agent Kit** to handle complex on-chain decision-making and asset evolution.
 - **Market Pulse Sync**: Real-time synchronization with **Jupiter Price API v3** to drive the labyrinth's mood engine.
-- **Memoized Blockchain Services**: Performance-optimized UI that handles heavy SDK initializations with near-zero latency.
+- **On-Chain Fair Play**: Integrated **MagicBlock VRF** for tamper-proof maze generation and high-speed gameplay via Ephemeral Rollups.
 
 ---
 
