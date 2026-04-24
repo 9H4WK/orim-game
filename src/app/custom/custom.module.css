@@ -1,0 +1,305 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow-x: hidden;
+}
+
+.header {
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(13, 10, 26, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid var(--color-primary);
+  z-index: 100;
+}
+
+.title {
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  color: var(--color-gold);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  gap: 40px;
+  padding: 40px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* ── Editor Toolbar ── */
+.toolbar {
+  composes: px-panel from global;
+  width: 240px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.toolTitle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.toolGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.toolBtn {
+  composes: btn from global;
+  width: 100%;
+  justify-content: flex-start;
+  font-size: 11px;
+  padding: 14px;
+}
+
+.toolActive {
+  background: var(--color-primary) !important;
+  border-color: #fff !important;
+  box-shadow: 0 0 15px var(--color-primary-glow) !important;
+}
+
+.toolIcon {
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+/* ── Canvas Area ── */
+.canvasWrap {
+  composes: px-panel from global;
+  padding: 20px;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.editorCanvas {
+  background: #0d0921;
+  cursor: crosshair;
+  image-rendering: pixelated;
+  border: 4px solid #3b1f6e;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--color-text-dim);
+  font-style: italic;
+}
+
+/* ── Info & Mint ── */
+.sidebar {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.infoBox {
+  composes: px-panel-gold from global;
+  padding: 24px;
+}
+
+.infoTitle {
+  font-size: 12px;
+  color: var(--color-gold);
+  margin-bottom: 12px;
+}
+
+.infoText {
+  font-size: 11px;
+  color: #fbbf24;
+  line-height: 1.6;
+}
+
+.priceTag {
+  margin-top: 16px;
+  padding: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px dashed var(--color-gold);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price {
+  font-size: 18px;
+  color: #fff;
+}
+
+.mintBtn {
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* ── Modal ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(5px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  composes: px-panel from global;
+  width: 460px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+.modalTitle {
+  font-size: 20px;
+  color: var(--color-primary-light);
+}
+
+.modalDesc {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.loadingCircle {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(124,58,237,0.2);
+  border-top: 6px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Simulation ── */
+.simContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  width: 100%;
+}
+
+.simMazeWrap {
+  border: 4px solid #7c3aed;
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
+}
+
+.simPickerWrap {
+  width: 100%;
+  max-width: 400px;
+  animation: slideUp 0.3s ease;
+}
+
+.stopBtn {
+  background: #ef4444 !important;
+  border-color: #fca5a5 !important;
+  font-weight: bold;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+.topStopBtn {
+  position: absolute;
+  top: -60px;
+  right: 0;
+}
+
+.stopBtn:hover {
+  background: #dc2626 !important;
+  transform: scale(1.05);
+}
+
+@media (max-width: 1024px) {
+  .main {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* ── Architect Handbook Guide ── */
+.guide {
+  width: 100%;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px dashed rgba(124,58,237,0.3);
+}
+
+.guideGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.guideStep {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  padding: 15px;
+  background: rgba(124,58,237,0.05);
+  border-left: 3px solid var(--color-primary);
+}
+
+.stepNum {
+  background: var(--color-primary);
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.stepLabel {
+  font-size: 12px;
+  color: var(--color-primary-light);
+  margin-bottom: 4px;
+}
+
+.stepDesc {
+  font-size: 10px;
+  color: var(--color-text-dim);
+  line-height: 1.6;
+}
+
+/* ── Simulation Success ── */
+.successIcon {
+  font-size: 40px;
+  margin-bottom: 10px;
+  animation: starPopPx 0.6s cubic-bezier(.17,.67,.44,1.27);
+}
+
+.modalButtons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.modalButtons button {
+  flex: 1;
+}

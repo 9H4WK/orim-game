@@ -1,0 +1,190 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  background-image: url('/orim_pixel_bg_1776496139639.png');
+  background-repeat: repeat;
+  background-size: 128px;
+  position: relative;
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(13, 10, 26, 0.7) 100%);
+  pointer-events: none;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: linear-gradient(180deg, #1a122e 0%, rgba(26, 18, 46, 0.8) 100%);
+  border-bottom: 4px solid #7c3aed;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.headerCenter {
+  flex: 1;
+  text-align: center;
+}
+
+.stageName {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 2px 2px 0 #7c3aed, 4px 4px 0 #000;
+  letter-spacing: 1px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.timerBox {
+  composes: px-hud-box from global;
+  border-color: #6d28d9;
+}
+
+.timerIcon { font-size: 16px; }
+
+.timerValue {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: #a78bfa;
+  min-width: 80px;
+  text-align: right;
+}
+
+.mistakeBox {
+  composes: px-hud-box from global;
+  border-color: #ef4444;
+  color: #f87171;
+}
+
+.mistakeCount {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+}
+
+/* Main maze area */
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  overflow: auto;
+  transition: padding-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mainWithBar {
+  padding-bottom: 240px;
+}
+
+.mazeWrap {
+  composes: px-panel from global;
+  padding: 8px;
+  background: #000; /* Contrast for maze */
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(124,58,237,0.1);
+  border-width: 6px;
+  outline-width: 3px;
+}
+
+/* Loading */
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0a1a;
+}
+
+.loadingBox {
+  composes: px-panel from global;
+  padding: 48px;
+  text-align: center;
+  max-width: 400px;
+}
+
+.loadingTitle {
+  font-family: var(--font-pixel);
+  font-size: 32px;
+  color: #fff;
+  text-shadow: 4px 4px 0 #7c3aed;
+  margin-bottom: 24px;
+}
+
+.loadingText {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: #a78bfa;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.loadingDots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  color: #7c3aed;
+  font-size: 24px;
+}
+
+/* Easter egg popup */
+.eggPopup {
+  composes: px-panel-gold from global;
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 300;
+  animation: slideUpBounce 0.6s cubic-bezier(.17,.67,.44,1.27);
+}
+
+@keyframes slideUpBounce {
+  0%   { transform: translateX(-50%) translateY(100%); opacity: 0; }
+  60%  { transform: translateX(-50%) translateY(-12px); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.eggEmoji { 
+  font-size: 40px; 
+  filter: drop-shadow(0 0 10px #fbbf24);
+}
+
+.eggTitle {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: #fbbf24;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.eggName {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+}
+
+@media (max-width: 768px) {
+  .header { padding: 10px 16px; }
+  .timerValue { font-size: 10px; min-width: 60px; }
+  .stageName { font-size: 11px; }
+  .mainWithBar { padding-bottom: 200px; }
+}

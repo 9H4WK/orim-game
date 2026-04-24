@@ -1,0 +1,229 @@
+/* ============================================================
+   ORIM — Global Design System v3
+   Crusaders Quest Inspired Epic Fantasy Theme
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Pixelify+Sans:wght@400;700&family=VT323&display=swap');
+
+/* ── Wallet Adapter Overrides ──────────────────────────────── */
+.wallet-adapter-button {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important;
+  font-family: var(--font-pixel) !important;
+  font-size: 8px !important; /* Pixel fonts need smaller size for precision */
+  padding: 12px 24px !important;
+  border-radius: 0 !important;
+  border: 1px solid #6366f1 !important;
+  box-shadow: 
+    0 0 10px rgba(99, 102, 241, 0.3),
+    inset 0 0 8px rgba(99, 102, 241, 0.2) !important;
+  transition: all 0.2s cubic-bezier(.17,.67,.44,1.27) !important;
+  color: #fff !important;
+  text-transform: uppercase;
+}
+.wallet-adapter-button:hover {
+  background: linear-gradient(135deg, #312e81 0%, #4338ca 100%) !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5) !important;
+}
+
+/* ── CSS Variables ─────────────────────────────────────────── */
+:root {
+  /* Epic Palette */
+  --color-bg:           #07040e;
+  --color-bg-deep:      #0c081a;
+  --color-surface:      rgba(15, 10, 31, 0.85); /* Glass surface */
+  --color-surface-hover:rgba(25, 20, 50, 0.95);
+  
+  /* Primary — Mystical Violet */
+  --color-primary:       #8b5cf6;
+  --color-primary-light: #c4b5fd;
+  --color-primary-dark:  #4c1d95;
+  --color-primary-glow:  rgba(139, 92, 246, 0.4);
+
+  /* Accents */
+  --color-gold:          #fde68a;
+  --color-gold-deep:     #fbbf24;
+  --color-gold-glow:     rgba(251, 191, 36, 0.3);
+  --color-item-legendary:#fcd34d;
+  --color-item-epic:     #c084fc;
+  --color-item-rare:     #34d399;
+  
+  /* Text */
+  --color-text:          #e0e7ff;
+  --color-text-dim:      #94a3b8;
+  --color-text-gold:     #fcd34d;
+
+  /* Fonts */
+  --font-pixel:         var(--font-pixel-override, 'Press Start 2P'), cursive;
+  --font-legendary:      var(--font-pixel);
+  --font-ui:             var(--font-pixel);
+  --font-mono:           'VT323', monospace;
+  --font-body:           'Outfit', sans-serif;
+
+  /* HUD Box */
+  --panel-border:        1px solid rgba(139, 92, 246, 0.4);
+  --panel-shadow:        0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(139, 92, 246, 0.1);
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  image-rendering: pixelated;
+  background-attachment: fixed;
+}
+
+/* ── Typography ────────────────────────────────────────────── */
+h1 { font-family: var(--font-pixel); font-weight: 400; letter-spacing: 2px; font-size: 2.5rem; }
+h2, h3 { font-family: var(--font-pixel); font-weight: 400; }
+.text-gold { color: var(--color-gold-deep); text-shadow: 0 0 8px var(--color-gold-glow); }
+
+/* ── PIXEL BUTTON SYSTEM (Direct Developed) ─────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: #1f2937;
+  border: 4px solid #111827;
+  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: 10px; /* Bumping size for 'Press Start 2P' */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.1s steps(2);
+  position: relative;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 2px solid rgba(255,255,255,0.1);
+  pointer-events: none;
+}
+
+.btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.6);
+  background: #374151;
+}
+
+.btn:active { 
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 transparent;
+}
+
+.btn-primary {
+  background: #4c1d95;
+  border-color: #1e1b4b;
+}
+.btn-primary:hover {
+  background: #6d28d9;
+}
+
+.btn-gold {
+  background: #b45309;
+  border-color: #451a03;
+  color: #fef3c7;
+}
+.btn-gold:hover {
+  background: #d97706;
+}
+
+.btn-secondary {
+  background: #334155;
+  border-color: #0f172a;
+}
+.btn-secondary:hover {
+  background: #475569;
+}
+
+/* ── TACTILE PIXEL PANELS ───────────────────────────────────── */
+.px-panel {
+  background: #0f0a1f;
+  border: 4px solid #1a1033;
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.px-panel::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 4px solid rgba(139, 92, 246, 0.1);
+  pointer-events: none;
+}
+
+.px-panel-gold {
+  border-color: #ca8a04;
+}
+.px-panel-gold::after {
+  border-color: rgba(251, 191, 36, 0.1);
+}
+
+/* ── HUD / BARS ────────────────────────────────────────────── */
+.px-hud-box {
+  background: rgba(13, 10, 26, 0.9);
+  border: 1px solid rgba(139, 92, 246, 0.6);
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+.stat-bar {
+  height: 10px;
+  background: #0f172a;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.stat-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
+  border-radius: 5px;
+  transition: width 0.4s ease;
+}
+
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes epicFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.anim-float { animation: epicFloat 4s ease-in-out infinite; }
+
+@keyframes mysticGlow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.3)); }
+  50% { filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.6)); }
+}
+.anim-glow { animation: mysticGlow 3s ease-in-out infinite; }
+
+/* ── CRT Cleanup (Subtle) ─────────────────────────────────── */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.03) 0px,
+    rgba(0,0,0,0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: overlay;
+}
