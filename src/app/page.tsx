@@ -36,13 +36,6 @@ export default function HomePage() {
   const [profileExists, setProfileExists] = useState<boolean | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    if (connected && wallet && publicKey) {
-      checkProfile(publicKey);
-    }
-  }, [connected, wallet, publicKey, checkProfile]);
-
   const checkProfile = useCallback(async (pubkey: PublicKey) => {
     try {
       const service = new OrimBlockchainService(connection, wallet!);
@@ -62,6 +55,13 @@ export default function HomePage() {
       setProfileExists(false);
     }
   }, [connection, wallet]);
+
+  useEffect(() => {
+    setMounted(true);
+    if (connected && wallet && publicKey) {
+      checkProfile(publicKey);
+    }
+  }, [connected, wallet, publicKey, checkProfile]);
 
   const handleInitProfile = async () => {
     if (!wallet) return;
