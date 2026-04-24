@@ -19,6 +19,8 @@ export interface MazeAgentConfig {
 }
 
 export class MazeAgentService {
+  private umi: any;
+  private agentKit: SolanaAgentKit | undefined;
   private openAiKey: string | undefined;
   private endpoint: string;
   private wallet: any;
