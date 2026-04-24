@@ -51,7 +51,7 @@ export class MazeAgentService {
       this.agentKit = new SolanaAgentKit(
         secretKey,
         this.endpoint,
-        this.openAiKey
+        { OPENAI_API_KEY: this.openAiKey }
       );
       return this.agentKit;
     } catch (e) {
