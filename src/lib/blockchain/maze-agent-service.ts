@@ -106,12 +106,12 @@ export class MazeAgentService {
   async getSovereignLabyrinths(owner: string) {
     try {
       const assets = await fetchAssetsByOwner(this.umi, publicKey(owner));
-      // In a real app, we would filter by a specific collection or name prefix
-      // For now, return all Core assets as "Sovereign Mazes"
-      return assets.map(a => ({
+      
+      return await Promise.all(assets.map(async a => ({
         address: a.publicKey.toString(),
-        name: a.name || 'Unnamed Labyrinth'
-      }));
+        name: a.name || 'Unnamed Labyrinth',
+        plays: await this.getLabyrinthClears(a.publicKey.toString())
+      })));
     } catch (e) {
       console.error("[MazeAgent] Failed to fetch sovereign labyrinths", e);
       return [];
@@ -126,40 +126,84 @@ export class MazeAgentService {
     try {
       // In a production environment, this would query a collection or an indexer.
       // For the Hackathon, we return a mix of 'Featured' labyrinths and global ones.
-      return [
+      const featured = [
         {
           address: "8xLp7u6B7u6B7u6B7u6B7u6B7u6B7u6B7u6B7u6B7u6B",
           name: "THE VOID GAUNTLET",
           creator: "Architect_Zeus",
-          plays: 142,
           mood: "Void"
         },
         {
           address: "3qYv9r2R9r2R9r2R9r2R9r2R9r2R9r2R9r2R9r2R9r2R",
           name: "NEON OVERDRIVE",
           creator: "Cyber_Punk",
-          plays: 89,
           mood: "Cyber"
         },
         {
           address: "5wRz4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1",
           name: "GILDED ASCENSION",
           creator: "Divine_One",
-          plays: 256,
           mood: "Radiant"
         },
         {
           address: "2kXp5n8N5n8N5n8N5n8N5n8N5n8N5n8N5n8N5n8N5n8",
           name: "FORBIDDEN HOLLOW",
           creator: "Shadow_Mage",
-          plays: 64,
           mood: "Default"
         }
       ];
+
+      return await Promise.all(featured.map(async lab => ({
+        ...lab,
+        plays: await this.getLabyrinthClears(lab.address)
+      })));
     } catch (e) {
       console.error("[MazeAgent] Failed to fetch community labyrinths", e);
       return [];
     }
+  }
+
+  /**
+   * Fetches the number of clears for a specific labyrinth.
+   * In a production app, this would query an indexer or a shared on-chain PDA.
+   * For the demo, we use a persistent 'Global Stats' simulation.
+   */
+  async getLabyrinthClears(assetAddress: string): Promise<number> {
+    const statsStr = localStorage.getItem('orim_labyrinth_stats');
+    const stats = statsStr ? JSON.parse(statsStr) : {};
+    
+    // If not in stats, generate a deterministic initial count based on address
+    if (stats[assetAddress] === undefined) {
+      const seed = assetAddress.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      stats[assetAddress] = (seed % 150) + 10; // Initial "organic" count
+      localStorage.setItem('orim_labyrinth_stats', JSON.stringify(stats));
+    }
+    
+    return stats[assetAddress];
+  }
+
+  /**
+   * Increments the clear count for a labyrinth on-chain (via memo/event simulation).
+   */
+  async recordLabyrinthClear(assetAddress: string) {
+    console.log(`[MazeAgent] Recording Clear for Labyrinth: ${assetAddress}...`);
+    
+    const statsStr = localStorage.getItem('orim_labyrinth_stats');
+    const stats = statsStr ? JSON.parse(statsStr) : {};
+    
+    if (stats[assetAddress] === undefined) {
+      const seed = assetAddress.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      stats[assetAddress] = (seed % 150) + 10;
+    }
+    
+    stats[assetAddress] += 1;
+    localStorage.setItem('orim_labyrinth_stats', JSON.stringify(stats));
+    
+    // Here we would also trigger a real on-chain event or reward distribution
+    return {
+      status: "SUCCESS",
+      newCount: stats[assetAddress]
+    };
   }
 
   /**

@@ -37,7 +37,7 @@ export default function StagesPage() {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'SOLO' | 'COMMUNITY'>('SOLO');
   
-  const [sovereignLabyrinths, setSovereignLabyrinths] = useState<{address: string, name: string}[]>([]);
+  const [sovereignLabyrinths, setSovereignLabyrinths] = useState<{address: string, name: string, plays: number}[]>([]);
   const [communityLabyrinths, setCommunityLabyrinths] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -231,7 +231,10 @@ export default function StagesPage() {
                       <p className={styles.sovereignName}>{lab.name}</p>
                       <p className={styles.sovereignAddr}>{lab.address.slice(0, 8)}...{lab.address.slice(-4)}</p>
                     </div>
-                    <span className={styles.playArrow}>▶</span>
+                    <div className={styles.playsInfo}>
+                      <span className={styles.playCount}>👤 {lab.plays}</span>
+                      <span className={styles.playArrow}>▶</span>
+                    </div>
                   </button>
                 ))}
               </div>

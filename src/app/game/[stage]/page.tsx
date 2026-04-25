@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 
 import {
   generateMaze,
@@ -11,6 +11,7 @@ import {
   getAvailableDirections,
   MazeData,
 } from '@/lib/maze/generator';
+import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import { EASTER_EGG_ITEM_IDS, getItemById } from '@/lib/shop/items';
@@ -45,6 +46,8 @@ function GameContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -57,6 +60,11 @@ function GameContent() {
   const stageNum     = isInfinite ? 100 : (isSovereign ? 0 : parseInt(stageParam || '1', 10));
   const sovereignId  = searchParams.get('id');
   const sovereignMood = searchParams.get('mood') || 'Neutral';
+
+  const agentService = useMemo(() => {
+    if (!mounted) return null;
+    return new MazeAgentService(connection.rpcEndpoint, { publicKey }, "sk-placeholder");
+  }, [connection.rpcEndpoint, publicKey, mounted]);
 
   // ── Zustand store ────────────────────────────────────────────
   const {
@@ -271,9 +279,14 @@ function GameContent() {
         mistakes,
         completedAt: Date.now(),
       });
+
+      // Record Sovereign Labyrinth Clear (On-chain/Global Stats)
+      if (isSovereign && sovereignId && agentService) {
+        agentService.recordLabyrinthClear(sovereignId);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, [phase, isSovereign, sovereignId, agentService]);
 
   // ── Render: loading ──────────────────────────────────────────
   if (!mounted || loading || !maze) {
