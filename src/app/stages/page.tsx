@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useEffect, useState } from 'react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useEffect, useState, useMemo } from 'react';
 import { usePlayerStore } from '@/lib/store/playerStore';
+import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
 import styles from './stages.module.css';
 
 const WORLDS = [
@@ -30,21 +31,34 @@ function Stars({ count }: { count: number }) {
 
 export default function StagesPage() {
   const router = useRouter();
-  const { connected } = useWallet();
+  const { connection } = useConnection();
+  const { connected, publicKey } = useWallet();
   const { stageResults, highestStage, totalStars } = usePlayerStore();
   const [mounted, setMounted] = useState(false);
+  const [sovereignLabyrinths, setSovereignLabyrinths] = useState<{address: string, name: string}[]>([]);
+  const [isLoadingSovereign, setIsLoadingSovereign] = useState(false);
+
+  const agentService = useMemo(() => {
+    if (!connected || !mounted) return null;
+    return new MazeAgentService(connection.rpcEndpoint, { publicKey }, "sk-placeholder");
+  }, [connection.rpcEndpoint, connected, publicKey, mounted]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  /* 
-   * Note: We allow entering without publicKey in dev/demo mode, 
-   * but if strictly Web3, we'd check publicKey here.
-   */
+  useEffect(() => {
+    if (agentService && publicKey) {
+      setIsLoadingSovereign(true);
+      agentService.getSovereignLabyrinths(publicKey.toString())
+        .then(setSovereignLabyrinths)
+        .finally(() => setIsLoadingSovereign(false));
+    }
+  }, [agentService, publicKey]);
 
   const handleStage = (n: number) => router.push(`/game/${n}`);
   const handleInfinite = () => router.push('/game/infinite');
+  const handleSovereign = (address: string) => router.push(`/game/sovereign?id=${address}`);
 
   return (
     <div className={`${styles.page} scanlines`}>
@@ -149,6 +163,32 @@ export default function StagesPage() {
           );
         })}
       </div>
+      
+      {/* ── Sovereign Labyrinths (Divine Architect) ── */}
+      {mounted && sovereignLabyrinths.length > 0 && (
+        <div className={styles.sovereignSection}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionIcon}>🏛️</span>
+            <h2 className={styles.sectionTitle}>SOVEREIGN LABYRINTHS</h2>
+          </div>
+          <div className={styles.sovereignGrid}>
+            {sovereignLabyrinths.map((lab) => (
+              <button 
+                key={lab.address}
+                className={styles.sovereignBtn}
+                onClick={() => handleSovereign(lab.address)}
+              >
+                <div className={styles.sovereignIcon}>💠</div>
+                <div className={styles.sovereignInfo}>
+                  <p className={styles.sovereignName}>{lab.name}</p>
+                  <p className={styles.sovereignAddr}>{lab.address.slice(0, 8)}...{lab.address.slice(-4)}</p>
+                </div>
+                <span className={styles.playArrow}>▶</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Infinite Mode ── */}
       <div className={styles.infiniteSection}>

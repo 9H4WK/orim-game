@@ -262,3 +262,83 @@
   .statItem { padding: 0 20px; }
   .infiniteBtn { flex-direction: column; text-align: center; gap: 20px; }
 }
+
+.sovereignSection {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 40px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sectionIcon {
+  font-size: 24px;
+}
+
+.sectionTitle {
+  font-family: var(--font-legendary);
+  font-size: 16px;
+  color: var(--color-primary-light);
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.sovereignGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.sovereignBtn {
+  composes: px-panel from global;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(.17,.67,.44,1.27);
+  text-align: left;
+}
+
+.sovereignBtn:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: var(--color-primary-light);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+.sovereignIcon {
+  font-size: 32px;
+  filter: drop-shadow(0 0 10px var(--color-primary-glow));
+}
+
+.sovereignInfo {
+  flex: 1;
+}
+
+.sovereignName {
+  font-family: var(--font-legendary);
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sovereignAddr {
+  font-family: 'Fira Code', monospace;
+  font-size: 10px;
+  color: var(--color-text-dim);
+}
+
+.playArrow {
+  color: var(--color-primary-light);
+  font-size: 14px;
+}

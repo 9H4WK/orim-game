@@ -3,7 +3,8 @@ import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-ad
 import { 
   create, 
   mplCore, 
-  fetchAsset 
+  fetchAsset,
+  fetchAssetsByOwner 
 } from '@metaplex-foundation/mpl-core';
 import { 
   createV1, 
@@ -97,6 +98,24 @@ export class MazeAgentService {
       signature: result.signature.toString(),
       owner: this.umi.identity.publicKey.toString()
     };
+  }
+
+  /**
+   * Fetches all Sovereign Labyrinths owned by a specific address.
+   */
+  async getSovereignLabyrinths(owner: string) {
+    try {
+      const assets = await fetchAssetsByOwner(this.umi, publicKey(owner));
+      // In a real app, we would filter by a specific collection or name prefix
+      // For now, return all Core assets as "Sovereign Mazes"
+      return assets.map(a => ({
+        address: a.publicKey.toString(),
+        name: a.name || 'Unnamed Labyrinth'
+      }));
+    } catch (e) {
+      console.error("[MazeAgent] Failed to fetch sovereign labyrinths", e);
+      return [];
+    }
   }
 
   /**
