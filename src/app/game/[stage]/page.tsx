@@ -116,7 +116,13 @@ export default function GamePage() {
 
     resetGame();
 
-    const generated = generateMaze(stg, undefined, EASTER_EGG_ITEM_IDS);
+    let generated: MazeData;
+    if (isSovereign && sovereignId) {
+      generated = generateSovereignMaze(sovereignId, sovereignMood);
+    } else {
+      generated = generateMaze(stg, undefined, EASTER_EGG_ITEM_IDS);
+    }
+    
     setMaze(generated);
     mazeRef.current = generated;
     setMazeData(generated);
@@ -125,12 +131,12 @@ export default function GamePage() {
     setTimeout(() => {
       startGame();
     }, 120);
-  }, [resetGame, setMazeData, startGame]);
+  }, [resetGame, setMazeData, startGame, isSovereign, sovereignId, sovereignMood]);
 
   useEffect(() => {
     initMaze(stageNum);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageNum]);
+  }, [stageNum, isSovereign, sovereignId]);
 
   // ── Auto-move ENGINE ─────────────────────────────────────────
   const doAutoMove = useCallback((
@@ -291,7 +297,11 @@ export default function GamePage() {
 
         <div className={styles.headerCenter}>
           <span className={styles.stageName}>
-            {isInfinite ? `∞ INFINITE #${infiniteCount + 1}` : `STAGE ${stageNum}`}
+            {isSovereign 
+              ? 'SOVEREIGN LABYRINTH' 
+              : isInfinite 
+                ? `∞ INFINITE #${infiniteCount + 1}` 
+                : `STAGE ${stageNum}`}
           </span>
         </div>
 

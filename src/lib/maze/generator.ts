@@ -206,6 +206,46 @@ function findJunctions(grid: Cell[][]): { x: number; y: number }[] {
   return junctions;
 }
 
+/** Simple string hash to number for seeding */
+export function stringToSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+/**
+ * Sovereign Maze Generator — generates a unique, permanent maze layout 
+ * based on the Labyrinth's Core Identity address.
+ */
+export function generateSovereignMaze(
+  assetAddress: string,
+  mood: string = 'Neutral'
+): MazeData {
+  // Use address as base seed
+  const baseSeed = stringToSeed(assetAddress);
+  
+  // Dimensions scale with mood or can be fixed for "Sovereign" class
+  // Let's use a standard 25x25 for Sovereign labyrinths
+  const width = 25;
+  const height = 25;
+  
+  const rng = createRng(baseSeed);
+  const grid = wilsonsAlgorithm(width, height, rng);
+  
+  grid[0][0].isStart = true;
+  grid[height - 1][width - 1].isEnd = true;
+  grid[0][0].walls.left = false;
+  grid[height - 1][width - 1].walls.right = false;
+
+  const solution = findSolutionPath(grid, 0, 0, width - 1, height - 1);
+  const junctions = findJunctions(grid);
+
+  return { grid, width, height, junctions, solution };
+}
+
 /**
  * Main generator — combines Wilson's algorithm with VRF seed for onchain fairness.
  * Falls back to client seed if VRF bytes not available.

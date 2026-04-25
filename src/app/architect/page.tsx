@@ -217,6 +217,16 @@ export default function ArchitectPage() {
                     VIEW ON EXPLORER ↗
                   </a>
                 </div>
+
+                <div className={styles.actionRow} style={{ marginTop: '20px' }}>
+                   <button 
+                     className="btn btn-primary btn-lg" 
+                     style={{ width: '100%', padding: '1.25rem' }}
+                     onClick={() => router.push(`/game/sovereign?id=${result.assetAddress}&mood=${evolution?.newMood || mood}`)}
+                   >
+                     ENTER YOUR LABYRINTH ▶
+                   </button>
+                </div>
                 
                 <div className={styles.evolutionBox}>
                   <p className={styles.loreText}>
