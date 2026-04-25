@@ -10,7 +10,7 @@ import {
   createV1, 
   mplTokenMetadata 
 } from '@metaplex-foundation/mpl-token-metadata';
-import { generateSigner, publicKey, percentAmount } from '@metaplex-foundation/umi';
+import { generateSigner, publicKey, percentAmount, base58 } from '@metaplex-foundation/umi';
 import { SolanaAgentKit } from "solana-agent-kit";
 
 export interface MazeAgentConfig {
@@ -95,7 +95,7 @@ export class MazeAgentService {
     return {
       assetAddress: assetSigner.publicKey.toString(),
       tokenMint: mintSigner.publicKey.toString(),
-      signature: result.signature.toString(),
+      signature: base58.deserialize(result.signature)[0],
       owner: this.umi.identity.publicKey.toString()
     };
   }
