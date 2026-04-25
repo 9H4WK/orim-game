@@ -160,7 +160,7 @@ export default function ClearScreen({
               <span className={styles.syncText}>
                 {statusText || 'READY TO SYNC STARDUST...'}
               </span>
-              {txId && (
+              {txId && !txId.startsWith('sandbox') && (
                 <a 
                   href={`https://explorer.solana.com/tx/${txId}?cluster=devnet`} 
                   target="_blank" 

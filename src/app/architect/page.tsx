@@ -172,17 +172,50 @@ export default function ArchitectPage() {
             {result && (
               <div className={styles.resultCard}>
                 <h2 className={styles.resultTitle}>LABYRINTH ASCENDED</h2>
+                
+                <div className={styles.infoBox}>
+                   <p className={styles.infoText}>
+                     Your creation is now a **Sovereign NFT** on Solana. It resides in your wallet and can be evolved through the market pulse.
+                   </p>
+                </div>
+
                 <div className={styles.statRow}>
                   <span className={styles.statLabel}>CORE IDENTITY</span>
-                  <span className={styles.statValue}>{result.assetAddress.slice(0, 12)}...</span>
+                  <a 
+                    href={`https://explorer.solana.com/address/${result.assetAddress}?cluster=devnet`} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className={styles.linkValue}
+                  >
+                    {result.assetAddress.slice(0, 12)}... ↗
+                  </a>
                 </div>
                 <div className={styles.statRow}>
                   <span className={styles.statLabel}>ENERGY TOKEN</span>
-                  <span className={styles.statValue}>{result.tokenMint.slice(0, 12)}...</span>
+                  <a 
+                    href={`https://explorer.solana.com/address/${result.tokenMint}?cluster=devnet`} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className={styles.linkValue}
+                  >
+                    {result.tokenMint.slice(0, 12)}... ↗
+                  </a>
                 </div>
                 <div className={styles.statRow}>
                   <span className={styles.statLabel}>AUTONOMY</span>
                   <span className={styles.statValue} style={{ color: '#10b981' }}>SOVEREIGN</span>
+                </div>
+                
+                <div className={styles.statRow} style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <span className={styles.statLabel}>SUMMONING TX</span>
+                  <a 
+                    href={`https://explorer.solana.com/tx/${result.signature}?cluster=devnet`} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className={styles.txLink}
+                  >
+                    VIEW ON EXPLORER ↗
+                  </a>
                 </div>
                 
                 <div className={styles.evolutionBox}>
