@@ -119,6 +119,50 @@ export class MazeAgentService {
   }
 
   /**
+   * Fetches Community Labyrinths (Public creations by other users).
+   * For the demo, this combines some 'Featured' creations with a simulated global discovery.
+   */
+  async getCommunityLabyrinths() {
+    try {
+      // In a production environment, this would query a collection or an indexer.
+      // For the Hackathon, we return a mix of 'Featured' labyrinths and global ones.
+      return [
+        {
+          address: "8xLp7u6B7u6B7u6B7u6B7u6B7u6B7u6B7u6B7u6B7u6B",
+          name: "THE VOID GAUNTLET",
+          creator: "Architect_Zeus",
+          plays: 142,
+          mood: "Void"
+        },
+        {
+          address: "3qYv9r2R9r2R9r2R9r2R9r2R9r2R9r2R9r2R9r2R9r2R",
+          name: "NEON OVERDRIVE",
+          creator: "Cyber_Punk",
+          plays: 89,
+          mood: "Cyber"
+        },
+        {
+          address: "5wRz4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1Z4m1",
+          name: "GILDED ASCENSION",
+          creator: "Divine_One",
+          plays: 256,
+          mood: "Radiant"
+        },
+        {
+          address: "2kXp5n8N5n8N5n8N5n8N5n8N5n8N5n8N5n8N5n8N5n8",
+          name: "FORBIDDEN HOLLOW",
+          creator: "Shadow_Mage",
+          plays: 64,
+          mood: "Default"
+        }
+      ];
+    } catch (e) {
+      console.error("[MazeAgent] Failed to fetch community labyrinths", e);
+      return [];
+    }
+  }
+
+  /**
    * Phase 2: Architectural Intelligence
    * The 'Architect' logic that reacts to market data.
    */
