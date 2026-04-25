@@ -1,22 +1,22 @@
 .page {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh; /* Allow growth */
   margin: 0;
   padding: 0;
   background: #07040e;
-  overflow: hidden; /* Lock viewport for true dashboard feel */
+  overflow-x: hidden;
+  overflow-y: auto; /* Enable vertical scroll */
 }
 
-/* ── Content Wrapper (Forced Overlap) ── */
+/* ── Content Wrapper ── */
 .content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative; /* Change from absolute to relative for scroll flow */
   z-index: 10;
   width: 100%;
   max-width: 960px;
+  margin: 0 auto;
+  padding: 120px 20px 80px; /* Top padding to replace centering */
   display: flex;
   flex-direction: column;
   align-items: center;
