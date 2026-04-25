@@ -211,17 +211,21 @@ export default function HomePage() {
         <section className={styles.roadmapSection}>
           <h2 className={styles.sectionTitle}>ECOSYSTEM ROADMAP</h2>
           <div className={styles.mazeMapContainer}>
-            <div className={styles.mazePath}>
+            <div className={styles.mazeVerticalPath}>
               {ROADMAP.map((item, i) => (
-                <div key={i} className={styles.mazeNode}>
-                  <div className={styles.nodePoint}>
-                    <span className={styles.nodePhase}>{item.phase}</span>
+                <div key={i} className={`${styles.mazeChamber} ${i % 2 === 0 ? styles.chamberLeft : styles.chamberRight}`}>
+                  <div className={styles.chamberInner}>
+                    <div className={styles.chamberHeader}>
+                      <span className={styles.chamberPhase}>{item.phase}</span>
+                      <h4 className={styles.chamberTitle}>{item.title}</h4>
+                    </div>
+                    <p className={styles.chamberDesc}>{item.desc}</p>
                   </div>
-                  <div className={styles.nodeContent}>
-                    <h4 className={styles.nodeTitle}>{item.title}</h4>
-                    <p className={styles.nodeDesc}>{item.desc}</p>
-                  </div>
-                  {i < ROADMAP.length - 1 && <div className={styles.mazeConnector} />}
+                  {i < ROADMAP.length - 1 && (
+                    <div className={`${styles.mazeCorridor} ${i % 2 === 0 ? styles.corridorRight : styles.corridorLeft}`}>
+                      <div className={styles.corridorLine} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
