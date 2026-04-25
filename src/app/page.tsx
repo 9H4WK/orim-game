@@ -30,7 +30,6 @@ const CORE_TECH = [
   { name: 'METAPLEX CORE', desc: 'The foundational layer for Sovereign Labyrinths. Utilizing the next-gen asset standard for atomic minting and autonomous metadata updates.' },
   { name: 'MAGICBLOCK', desc: 'Powering high-fidelity performance. Ephemeral Rollups enable zero-latency movement, while VRF ensures tamper-proof procedural generation.' },
   { name: 'SOLANA AGENT KIT', desc: 'The cognitive core of the Architect. AI-driven market analysis synchronizes the labyrinth state with real-world price data.' },
-  { name: 'ANCHOR PROGRAM', desc: 'The immutable ledger of progress. Persistent player profiles and stage clear verification secured directly on the Solana network.' },
 ];
 
 const ROADMAP = [
