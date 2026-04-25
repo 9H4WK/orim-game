@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 import {
   generateMaze,
+  generateSovereignMaze,
   getAvailableDirections,
   MazeData,
 } from '@/lib/maze/generator';
@@ -40,8 +41,9 @@ const OPPOSITE: Record<Dir, Dir> = {
   up: 'down', down: 'up', left: 'right', right: 'left',
 };
 
-export default function GamePage() {
+function GameContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -51,7 +53,10 @@ export default function GamePage() {
 
   const stageParam   = params?.stage as string;
   const isInfinite   = stageParam === 'infinite';
-  const stageNum     = isInfinite ? 100 : parseInt(stageParam || '1', 10);
+  const isSovereign  = stageParam === 'sovereign';
+  const stageNum     = isInfinite ? 100 : (isSovereign ? 0 : parseInt(stageParam || '1', 10));
+  const sovereignId  = searchParams.get('id');
+  const sovereignMood = searchParams.get('mood') || 'Neutral';
 
   // ── Zustand store ────────────────────────────────────────────
   const {
@@ -365,5 +370,13 @@ export default function GamePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function GamePage() {
+  return (
+    <Suspense fallback={null}>
+      <GameContent />
+    </Suspense>
   );
 }
