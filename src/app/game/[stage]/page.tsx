@@ -336,7 +336,7 @@ function GameContent() {
       </header>
 
       {/* ── Maze canvas ── */}
-      <main className={`${styles.main} ${phase === 'choosing_direction' ? styles.mainWithBar : ''}`}>
+      <main className={styles.main}>
         <div className={styles.mazeWrap}>
           <MazeCanvas
             maze={maze}

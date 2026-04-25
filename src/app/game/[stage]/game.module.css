@@ -84,11 +84,6 @@
   justify-content: center;
   padding: 32px 16px;
   overflow: auto;
-  transition: padding-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mainWithBar {
-  padding-bottom: 240px;
 }
 
 .mazeWrap {
