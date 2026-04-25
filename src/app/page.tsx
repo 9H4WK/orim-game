@@ -23,7 +23,21 @@ const FEATURES = [
   { matrix: ICON_FEAT_QUEST, title: 'Legendary Quests', desc: 'Conquer 100 floors of progressive mechanical peril.' },
   { matrix: ICON_FEAT_ARCHITECT, title: 'Architect Mode', desc: 'Design, verify, and mint your own dungeons as NFTs.' },
   { matrix: ICON_FEAT_CHIBI, title: 'Heroic Chibi', desc: 'Equip rare artifacts that physically change your appearance.' },
-  { matrix: ICON_FEAT_GLORY, title: 'On-Chain Glory', desc: 'Fair randomness powered by MagicBlock VRF & Solana.' },
+  { matrix: ICON_FEAT_GLORY, title: 'On-Chain Glory', desc: 'Fair randomness powered by MagicBlock VRF and Solana.' },
+];
+
+const CORE_TECH = [
+  { name: 'METAPLEX CORE', desc: 'The foundational layer for Sovereign Labyrinths. Utilizing the next-gen asset standard for atomic minting and autonomous metadata updates.' },
+  { name: 'MAGICBLOCK', desc: 'Powering high-fidelity performance. Ephemeral Rollups enable zero-latency movement, while VRF ensures tamper-proof procedural generation.' },
+  { name: 'SOLANA AGENT KIT', desc: 'The cognitive core of the Architect. AI-driven market analysis synchronizes the labyrinth state with real-world price data.' },
+  { name: 'ANCHOR PROGRAM', desc: 'The immutable ledger of progress. Persistent player profiles and stage clear verification secured directly on the Solana network.' },
+];
+
+const ROADMAP = [
+  { phase: 'PHASE 1', title: 'GENESIS SUMMONING', desc: 'Core engine deployment, Metaplex Core asset integration, and basic stage architecture.' },
+  { phase: 'PHASE 2', title: 'DIVINE EVOLUTION', desc: 'Solana Agent Kit integration for market-driven labyrinth shifts and AI-guided discovery.' },
+  { phase: 'PHASE 3', title: 'SOVEREIGN CLASH', desc: 'Community discovery hub, multi-user clear tracking, and expanded item economy.' },
+  { phase: 'PHASE 4', title: 'ETERNAL EXPANSION', desc: 'Cross-chain labyrinth portals, autonomous reward distribution, and advanced architect tools.' },
 ];
 
 export default function HomePage() {
@@ -39,19 +53,15 @@ export default function HomePage() {
   const checkProfile = useCallback(async (pubkey: PublicKey) => {
     try {
       const service = new OrimBlockchainService(connection, wallet!);
-      
-      // If we are in placeholder mode, check sandbox local storage
       if (PROGRAM_ID.toBase58() === 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS') {
         const isInit = localStorage.getItem(`orim_sandbox_init_${pubkey.toBase58()}`);
         setProfileExists(isInit === 'true');
         return;
       }
-
       const pda = await service.getUserProfilePda(pubkey);
       const acc = await connection.getAccountInfo(pda);
       setProfileExists(acc !== null);
     } catch (e) {
-      console.warn('On-Chain Check Failed (Expected if not deployed):', e);
       setProfileExists(false);
     }
   }, [connection, wallet]);
@@ -84,7 +94,6 @@ export default function HomePage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Unified Direct Pixel Environment ── */}
       <PixelBackground 
         layers={[
           { matrix: BG_STARS, palette: UI_PALETTE, scale: 6, opacity: 0.3, speedY: 0.2 },
@@ -96,18 +105,11 @@ export default function HomePage() {
       <div className={styles.scanlines} />
 
       <div className={styles.content}>
-        {/* ── All-In-One Interface Board ── */}
         <PixelPanel variant="stone" className={styles.mainBoard}>
-          
-          {/* 1. Integrated Logo */}
           <div className={styles.integratedLogo}>
             <div className={styles.logoRow}>
               {[LOGO_O, LOGO_R, LOGO_I, LOGO_M].map((matrix, i) => (
-                <div
-                  key={i}
-                  className={styles.logoCharWrap}
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                >
+                <div key={i} className={styles.logoCharWrap} style={{ animationDelay: `${i * 0.15}s` }}>
                   <PixelIcon matrix={matrix} size={100} palette={UI_PALETTE} />
                 </div>
               ))}
@@ -115,7 +117,6 @@ export default function HomePage() {
             <p className={styles.logoSub}>The Eternal Maze</p>
           </div>
 
-          {/* 2. Features Grid */}
           <div className={styles.featuresInside}>
             {FEATURES.map(({ matrix, title, desc }, i) => (
               <div key={i} className={styles.featureCell}>
@@ -130,7 +131,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* 3. Wallet / Play Area */}
           <div className={styles.walletInside}>
             {connected ? (
               <div className={styles.connectedArea}>
@@ -163,18 +163,9 @@ export default function HomePage() {
                     <p className={styles.connectHint}>
                       {isSandbox ? 'LOCAL CHARACTER NOT INITIALIZED' : 'CHARACTER NOT FOUND ON-CHAIN'}
                     </p>
-                    <button 
-                      className="btn btn-gold btn-lg" 
-                      onClick={handleInitProfile}
-                      disabled={isInitializing}
-                    >
+                    <button className="btn btn-gold btn-lg" onClick={handleInitProfile} disabled={isInitializing}>
                       {isInitializing ? 'INITIALIZING...' : 'INITIALIZE ADVENTURER'}
                     </button>
-                    <p className={styles.footer} style={{ marginTop: '10px' }}>
-                      {isSandbox 
-                        ? 'Simulates on-chain registration for Devnet testing' 
-                        : 'Secures your rank and stardust on Solana Devnet'}
-                    </p>
                   </div>
                 ) : (
                   <div className={styles.primaryActions}>
@@ -183,10 +174,10 @@ export default function HomePage() {
                     </button>
                     <div className={styles.subActions}>
                       <button className="btn btn-gold btn-sm" onClick={() => router.push('/architect')}>
-                        👁️ DIVINE ARCHITECT
+                        DIVINE ARCHITECT
                       </button>
                       <button className="btn btn-gold btn-sm" onClick={() => router.push('/shop')}>
-                        💎 VAULT
+                        VAULT
                       </button>
                     </div>
                   </div>
@@ -202,6 +193,40 @@ export default function HomePage() {
             )}
           </div>
         </PixelPanel>
+
+        {/* ── Core Technologies Section ── */}
+        <section className={styles.architectureSection}>
+          <h2 className={styles.sectionTitle}>CORE ARCHITECTURE</h2>
+          <div className={styles.coreTechGrid}>
+            {CORE_TECH.map((tech, i) => (
+              <div key={i} className={styles.techCard}>
+                <h3 className={styles.techName}>{tech.name}</h3>
+                <p className={styles.techDesc}>{tech.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Maze Roadmap Section ── */}
+        <section className={styles.roadmapSection}>
+          <h2 className={styles.sectionTitle}>ECOSYSTEM ROADMAP</h2>
+          <div className={styles.mazeMapContainer}>
+            <div className={styles.mazePath}>
+              {ROADMAP.map((item, i) => (
+                <div key={i} className={styles.mazeNode}>
+                  <div className={styles.nodePoint}>
+                    <span className={styles.nodePhase}>{item.phase}</span>
+                  </div>
+                  <div className={styles.nodeContent}>
+                    <h4 className={styles.nodeTitle}>{item.title}</h4>
+                    <p className={styles.nodeDesc}>{item.desc}</p>
+                  </div>
+                  {i < ROADMAP.length - 1 && <div className={styles.mazeConnector} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <p className={styles.footer}>
           Est. 2026 • Code-Art Developed • Solomon Ecosystem

@@ -267,3 +267,145 @@
   margin: 3px 0 0 0;
   letter-spacing: 2px;
 }
+
+/* ── Architecture Section ── */
+.architectureSection {
+  margin-top: 80px;
+  width: 100%;
+  max-width: 1100px;
+  padding: 0 40px;
+}
+
+.sectionTitle {
+  font-family: var(--font-legendary);
+  font-size: 1.5rem;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  margin-bottom: 40px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.coreTechGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.techCard {
+  background: rgba(15, 10, 31, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.techCard:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: var(--color-primary-light);
+  transform: translateY(-5px);
+}
+
+.techName {
+  font-family: var(--font-legendary);
+  font-size: 1rem;
+  color: var(--color-primary-light);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.techDesc {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+/* ── Roadmap Section ── */
+.roadmapSection {
+  margin-top: 100px;
+  margin-bottom: 80px;
+  width: 100%;
+  max-width: 1100px;
+  padding: 0 40px;
+}
+
+.mazeMapContainer {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 60px 40px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mazePath {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 1200px;
+}
+
+.mazeNode {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.nodePoint {
+  width: 80px;
+  height: 80px;
+  background: #0f0a1f;
+  border: 4px solid var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+  z-index: 2;
+}
+
+.nodePhase {
+  font-family: var(--font-pixel);
+  font-size: 0.7rem;
+  color: #fff;
+}
+
+.nodeContent {
+  max-width: 220px;
+}
+
+.nodeTitle {
+  font-family: var(--font-legendary);
+  font-size: 0.9rem;
+  color: #fff;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.nodeDesc {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.mazeConnector {
+  position: absolute;
+  top: 38px;
+  left: calc(50% + 40px);
+  width: calc(100% - 80px);
+  height: 4px;
+  background: var(--color-primary-light);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  z-index: 1;
+}
+
+.mazeNode:nth-child(even) {
+  flex-direction: column-reverse;
+}
+
+.mazeNode:nth-child(even) .nodePoint {
+  margin-top: 24px;
+  margin-bottom: 0;
+}
