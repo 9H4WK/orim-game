@@ -1,106 +1,105 @@
-# ORIM — The Eternal Labyrinth 🏛️✨
+# ORIM — Autonomous Labyrinth Ecosystem 🏛️✨
 
-**ORIM** is a high-fidelity, Web3-native pixel art adventure where players navigate a living, breathing labyrinth that possesses its own sovereign identity and economic soul. Powered by **Metaplex Core** and the **Solana Agent Kit**, ORIM transitions the traditional maze game into an autonomous ecosystem where the world itself reacts to the pulse of the real-world market.
-
----
-
-## 🌌 Overview
-In ORIM, the labyrinth isn't just a static stage—it's a **Sovereign Agent**. Each maze is minted as a Metaplex Core Asset, serving as a container for its own rules, rewards, and evolution logic. As the "Divine Architect," you don't just play the game; you summon and manage living dungeons that "breathe" alongside the Solana market.
+**ORIM** is a high-fidelity, Web3-native autonomous game ecosystem where players navigate a living, breathing labyrinth that possesses its own sovereign identity and economic soul. Powered by **Metaplex Core** and the **Solana Agent Kit**, ORIM transitions the traditional maze game into an autonomous world where the environment itself reacts to the pulse of the real-world market.
 
 ---
 
-## 🎨 Game Features
-- **Sovereign Labyrinths**: Every maze is an independent entity on-chain with its own metadata and economic state.
-- **Retro-Cyber Aesthetic**: High-fidelity pixel art combined with modern "One-Piece" dashboard design and glassmorphism.
-- **Market-Driven Evolution**: The world's "Mood" and "Architecture" shift in real-time based on the price of $SOL.
-- **Atomic Rituals**: Seamless user experience where summoning and economic setup happen in a single, bundled transaction.
+## 🌌 The Vision: Sovereign Autonomous Worlds
+In ORIM, the labyrinth isn't just a static level—it's a **Sovereign Agent**. Each maze is minted as a Metaplex Core Asset, serving as a container for its own rules, rewards, and evolution logic. As a "Divine Architect," you don't just play the game; you summon and manage living dungeons that "breathe" alongside the Solana market pulse.
 
 ---
 
-## 🛠️ Key Features (Technical)
-- **Metaplex Core Integration**: Utilizing the next-generation NFT standard for low-cost, high-performance autonomous assets.
-- **Autonomous Architect (AI)**: Integrated **Solana Agent Kit** to handle complex on-chain decision-making and asset evolution.
-- **Market Pulse Sync**: Real-time synchronization with **Jupiter Price API v3** to drive the labyrinth's mood engine.
-- **On-Chain Fair Play**: Integrated **MagicBlock VRF** for tamper-proof maze generation and high-speed gameplay via Ephemeral Rollups.
+## 🎨 Key Features
+
+### 🏛️ Divine Architect Dashboard
+A premium command center for creators to manage their on-chain assets.
+- **Atomic Summoning**: Mint a Metaplex Core Asset and its associated Fungible Token (Energy) in a single, seamless transaction.
+- **Market Pulse Sync**: Synchronize your labyrinth with the real-world Solana market. The labyrinth's "Mood" (Radiant, Void, Cyber) evolves based on live SOL price data.
+- **Architectural Evolution**: AI-driven inference (via Solana Agent Kit) determines the architectural shift, changing the palette and difficulty of the game world.
+
+### 🌎 Dual-Tab Discovery System
+A community-driven navigation hub for all labyrinth types.
+- **SOLO CAMPAIGN**: 100+ handcrafted sequential stages across multiple "Worlds" (Pixel Forest, Crystal Cave, etc.).
+- **COMMUNITY LABYRINTHS**: A global discovery tab where you can explore and play unique labyrinths summoned by other users.
+- **Real-Time Clear Tracking**: Every community labyrinth displays functional "Play Counts" (👤) which increment persistently as players clear them on-chain.
+
+### 🎮 Sovereign Gameplay Engine
+- **Deterministic Generation**: Sovereign mazes derive their layout directly from their Solana Address. This means every asset *is* a unique, permanent world.
+- **Retro-Cyber Aesthetics**: High-fidelity pixel art combined with modern glassmorphism and dynamic CRT scanline effects.
+- **Autonomous Rewards**: (Upcoming) Real-time token distribution based on player performance scores evaluated by AI.
 
 ---
 
-## 🎮 Why it's Fun
-1. **Dynamic Challenge**: The maze you played yesterday might be completely different today if the market moves. A "Radiant" maze in a bull market is more complex and rewarding, while a "Void" maze in a bear market is atmospheric and dangerous.
-2. **True Ownership**: You don't just own a skin; you own a piece of the game's world-logic.
-3. **Emergent Strategy**: Players must adapt their movement and resource management based on the current "Mood" of the labyrinth.
+## 🏆 Bounty & Technical Implementation
+
+ORIM leverages cutting-edge Solana infrastructure to achieve true autonomy. Below are the key technical integrations with direct links to the implementation:
+
+### 1. Metaplex Core (The Living Asset Standard)
+We chose **Metaplex Core** for its efficiency and plugin-based extensibility. Every labyrinth is a Core Asset, allowing for cheap metadata updates and autonomous state management.
+- **Implementation**: [src/lib/blockchain/maze-agent-service.ts](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/blockchain/maze-agent-service.ts)
+- **Key Logic**: `summonLabyrinth` combines Asset creation and Token minting into a single atomic ritual.
+
+### 2. Solana Agent Kit (The Autonomous Mind)
+The **Solana Agent Kit** powers our "Architect AI". It evaluates market conditions and manages the evolution logic of the labyrinths.
+- **Implementation**: [src/lib/blockchain/maze-agent-service.ts](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/blockchain/maze-agent-service.ts)
+- **Key Logic**: `evolveMaze` uses the Agent Kit to infer architectural shifts and `recordLabyrinthClear` handles the autonomous recording of player progress.
+
+### 3. Sovereign Procedural Generation
+Our engine ensures that "The Code is the World".
+- **Implementation**: [src/lib/maze/generator.ts](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/maze/generator.ts)
+- **Key Logic**: `generateSovereignMaze` uses a deterministic seed derived from the Solana PublicKey to ensure a permanent, unique layout for every minted asset.
+
+### 4. Custom Anchor Program
+We built a custom Solana program to handle persistent player profiles and verified stage clears.
+- **IDL**: [src/lib/blockchain/idl.json](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/blockchain/idl.json)
+- **Frontend Integration**: [src/lib/blockchain/program-service.ts](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/blockchain/program-service.ts)
 
 ---
 
-## ⚙️ System Flow
+## ⚙️ System Architecture
+
 ```mermaid
-sequenceDiagram
-    participant User as Player
-    participant UI as Dashboard
-    participant API as Market Proxy
-    participant SAK as Solana Agent Kit
-    participant Chain as Solana (Metaplex Core)
-
-    User->>UI: Initiate Summoning Ritual
-    UI->>Chain: Mint Core Asset + Initialize Token Economy
-    Chain-->>UI: Labyrinth ALIVE (Asset ID)
+graph TD
+    User((Player)) --> UI[Next.js 16 Dashboard]
+    UI --> Agent[Solana Agent Kit]
+    UI --> Core[Metaplex Core]
+    UI --> Anchor[Anchor Program]
     
-    User->>UI: Synchronize with Pulse
-    UI->>API: Fetch SOL Price (Jupiter v3)
-    API-->>UI: Price Data
-    UI->>SAK: Infer New Architecture (AI)
-    SAK-->>UI: New Mood (Radiant/Void/Cyber)
-    UI->>Chain: Update Asset Metadata
-    Chain-->>User: Labyrinth Evolved
+    Agent --> Jup[Jupiter Price API]
+    Agent --> Eval[Evolution Logic]
+    
+    Core --> Asset[Sovereign Labyrinth Asset]
+    Anchor --> Profile[Player Progress & XP]
+    
+    Asset -.-> Gen[Deterministic Maze Generator]
+    Gen --> UI
 ```
 
 ---
 
-## 👤 User Flow
-```mermaid
-sequenceDiagram
-    participant P as Player
-    participant W as Backpack Wallet
-    participant G as Game Engine
-
-    P->>W: Connect Wallet
-    P->>G: Enter the Void (Start Game)
-    G->>P: Render Procedural Maze
-    P->>G: Move Hero (Arrow Keys)
-    G->>G: Detect Collisions & Items
-    P->>G: Reach Goal
-    G->>W: Request Reward Signature
-    W-->>P: Victory! (On-Chain Reward)
-```
+## 🚀 Retention & Economy
+- **Architect Rank**: Progress through ranks by summoning and evolving labyrinths.
+- **Dynamic Rewards**: Multiplier bonuses when the market is "Radiant".
+- **Social Proof**: Real-time "Plays" tracking for community creations encourages creators to design more engaging (or difficult) mazes.
 
 ---
 
-## 🏆 Bounty Integration
-1. **Metaplex Core**: Used as the foundational layer for "Living Mazes," allowing for efficient metadata updates and autonomous ownership structures.
-2. **Solana Agent Kit**: Empowered the "Divine Architect" dashboard, enabling AI-driven evolution of the game world based on external data.
-3. **Jupiter API**: Integrated real-time market data to act as the "heartbeat" of the game's ecosystem.
-
----
-
-## 📈 Retention Strategy
-- **Architect Progression**: Players can level up their "Architect Rank" by summoning and evolving more complex labyrinths.
-- **Daily Market Rewards**: Special rewards that trigger only when the labyrinth enters a specific state (e.g., "Gilded Ascension" bonuses during SOL pumps).
-- **Customizable Heroes**: Use on-chain items earned in the maze to customize your chibi hero, driving a long-term collection loop.
-- **Social Echo**: High-score boards for each "Mood" state, encouraging players to master the labyrinth in all its forms.
-
----
-
-## 🚀 Getting Started
+## 🛠️ Getting Started
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/Joseph-hackathon/Orim.git
 
-# Install dependencies
+# 2. Install dependencies
 npm install
 
-# Run the dev server
+# 3. Configure Environment
+# Add your NEXT_PUBLIC_SOLANA_RPC and OPENAI_API_KEY to .env
+
+# 4. Launch the Ecosystem
 npm run dev
 ```
 
-**ORIM — Forge the path. Evolve the world.**
+---
+
+**ORIM — Forge the path. Evolve the world. The Labyrinth is ALIVE.** 🏛️✨
