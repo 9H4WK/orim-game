@@ -194,17 +194,14 @@ export default function StagesPage() {
           <div className={styles.infiniteSection}>
             <button
               id="infinite-mode-btn"
-              className={`${styles.infiniteBtn} ${mounted && highestStage < 100 ? styles.infiniteLocked : ''}`}
-              onClick={() => mounted && highestStage >= 100 && handleInfinite()}
-              disabled={!mounted || highestStage < 100}
+              className={styles.infiniteBtn}
+              onClick={() => handleInfinite()}
             >
               <span className={styles.infiniteIcon}>∞</span>
               <div>
                 <p className={styles.infiniteTitle}>INFINITE MAZE MODE</p>
                 <p className={styles.infiniteSub}>
-                  {mounted && highestStage >= 100 
-                    ? 'Endless mazes generated on-chain via VRF.' 
-                    : `Clear Stage 100 to unlock (${mounted ? highestStage : 0}/100)`}
+                  Endless mazes generated on-chain via VRF.
                 </p>
               </div>
             </button>

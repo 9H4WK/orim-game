@@ -48,6 +48,11 @@ export function vrfSeedToNumber(vrfBytes: number[]): number {
 /** Get stage dimensions based on stage number */
 export function getStageDimensions(stage: number): { width: number; height: number } {
   // Stage 1: 7×7 → Stage 100: 50×50
+  if (stage >= 100) {
+    // Reduced difficulty for Demo Video Recording purposes
+    return { width: 15, height: 15 }; 
+  }
+  
   const base = 7;
   const growth = Math.floor((stage - 1) / 4);
   const size = Math.min(base + growth * 3, 50);

@@ -18,6 +18,7 @@ interface ClearScreenProps {
   isInfiniteMode?: boolean;
   infiniteStageCount?: number;
   foundEasterEggs?: string[];
+  finalPnL?: number;
 }
 
 function formatTime(ms: number): string {
@@ -44,6 +45,7 @@ export default function ClearScreen({
   isInfiniteMode = false,
   infiniteStageCount = 0,
   foundEasterEggs = [],
+  finalPnL,
 }: ClearScreenProps) {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -129,6 +131,16 @@ export default function ClearScreen({
                 {mistakes}
               </span>
             </div>
+
+            {/* Flash Trade Final PnL */}
+            {finalPnL !== undefined && (
+              <div className={styles.statRow}>
+                <span className={styles.statLabel}>⚡ FLASH PnL</span>
+                <span className={`${styles.statValue} ${finalPnL >= 0 ? styles.statSuccess : styles.statDanger}`}>
+                  {finalPnL >= 0 ? '+' : ''}{finalPnL.toFixed(2)}%
+                </span>
+              </div>
+            )}
             
             {/* Items Found Section */}
             {foundEasterEggs.length > 0 && (
