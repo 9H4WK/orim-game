@@ -1,11 +1,12 @@
-# ORIM — Autonomous Labyrinth Ecosystem
+# ORIM: Gamified DeFi Labyrinth
 
-ORIM is a high-fidelity, Web3-native autonomous game ecosystem where players navigate a living, breathing labyrinth that possesses its own sovereign identity and economic soul. Powered by Metaplex Core, Magicblock, and the Solana Agent Kit, ORIM transitions the traditional maze game into an autonomous world where the environment itself reacts to the pulse of the real-world market.
+**Project Description:**
+ORIM is a "Gamified DeFi" project built on Solana. It serves as an interactive front-end for Flash Trade V2 disguised as an endless labyrinth game. Players take a Long or Short position on crypto assets before entering the maze. Real-time market volatility dynamically triggers in-game traps, and the final leaderboard ranking is determined by combining the player's escape time with their trading PnL.
 
 ---
 
 ## The Vision: Sovereign Autonomous Worlds
-In ORIM, the labyrinth isn't just a static level—it's a Sovereign Agent. Each maze is minted as a Metaplex Core Asset, serving as a container for its own rules, rewards, and evolution logic. As a Divine Architect, you don't just play the game; you summon and manage living dungeons that breathe alongside the Solana market pulse.
+In ORIM, the labyrinth isn't just a static level, it's a Sovereign Agent. Each maze is minted as a Metaplex Core Asset, serving as a container for its own rules, rewards, and evolution logic. As a Divine Architect, you don't just play the game; you summon and manage living dungeons that breathe alongside the Solana market pulse.
 
 ---
 
@@ -18,8 +19,9 @@ A premium command center for creators to manage their on-chain assets.
 - Architectural Evolution: AI-driven inference (via Solana Agent Kit) determines the architectural shift, changing the palette and difficulty of the game world.
 
 ### Magicblock Performance Engine
-- Ephemeral Rollups: Utilizes session-based execution to achieve high-fidelity, zero-latency movement and collision detection, providing a seamless "One-Piece" gameplay experience on Solana.
-- Magicblock VRF: Ensures fair and tamper-proof randomness for the on-chain Infinite Maze mode, guaranteeing that every procedural layout is both unique and verified.
+**How ORIM uses the Ephemeral Rollup:**
+ORIM uses MagicBlock Ephemeral Rollups to achieve zero-latency gaming with on-chain composability. Maze navigation requires high-frequency keystrokes, which would cause severe lag and gas costs if processed directly on Layer 1. By delegating the active game state to the Ephemeral Rollup, all movements are processed instantly for free. Only the final cleared state and PnL score are seamlessly committed back to the Solana Mainnet.
+- **Magicblock VRF:** Ensures fair and tamper-proof randomness for the on-chain Infinite Maze mode, guaranteeing that every procedural layout is both unique and verified.
 
 ### Dual-Tab Discovery System
 A community-driven navigation hub for all labyrinth types.
