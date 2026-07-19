@@ -5,8 +5,10 @@ ORIM is an autonomous, endless labyrinth game built on Solana. Players navigate 
 
 ---
 
-## The Vision: Sovereign Autonomous Worlds
-In ORIM, the labyrinth isn't just a static level, it's a Sovereign Agent. Each maze is minted as a Metaplex Core Asset, serving as a container for its own rules, rewards, and evolution logic. As a Divine Architect, you don't just play the game; you summon and manage living dungeons that breathe alongside the Solana market pulse.
+## The Vision: M.C. Escher & Sovereign Autonomous Worlds
+Our vision for ORIM is deeply inspired by the legendary graphic artist **Maurits C. Escher (M.C. Escher)**. Escher's work famously explored impossible objects, infinite geometries, and the illusion of depth through intricate tessellations. We aim to bring his surreal, mind-bending concepts into Web3 gaming.
+
+In ORIM, the labyrinth isn't just a static level—it is an infinite, impossible space acting as a **Sovereign Agent**. Each maze is minted as a Metaplex Core Asset, serving as a container for its own rules and evolution logic. You don't just play the game; you wander through a living, breathing paradox of monochrome architecture that shifts autonomously. We embrace the **Void**—a design philosophy stripping away unnecessary clutter, focusing purely on impossible architecture, survival, and sovereign gameplay.
 
 ---
 
