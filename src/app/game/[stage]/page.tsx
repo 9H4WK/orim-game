@@ -12,8 +12,6 @@ import {
   MazeData,
 } from '@/lib/maze/generator';
 import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
-import { FlashTradeService } from '@/lib/blockchain/flash-trade-service';
-import TraderTerminal from '@/components/ui/TraderTerminal';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import { EASTER_EGG_ITEM_IDS, getItemById } from '@/lib/shop/items';
@@ -72,9 +70,8 @@ function GameContent() {
   const {
     phase, playerX, playerY, playerDirection, fromDirection,
     mistakes, startTime, clearTime, stars, foundEasterEggs,
-    activeTrade, currentPnL, flashEventActive,
     setMazeData, startGame, movePlayer, setPhase, recordMistake,
-    findEasterEgg, resetGame, openTrade, updatePnL, triggerFlashEvent
+    findEasterEgg, resetGame
   } = useGameStore();
 
   const { recordClear, addItem, foundEgg } = usePlayerStore();
@@ -86,11 +83,6 @@ function GameContent() {
   const [showEgg, setShowEgg]         = useState<string | null>(null);
   const [infiniteCount, setInfiniteCount] = useState(0);
   const [availableDirs, setAvailableDirs] = useState<Dir[]>([]);
-
-  const [showTerminal, setShowTerminal] = useState(false);
-  const [terminalLoading, setTerminalLoading] = useState(false);
-  const [liveTerminalPrice, setLiveTerminalPrice] = useState(0);
-  const flashTradeService = useMemo(() => new FlashTradeService(), []);
 
   // Refs to avoid stale closures
   const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -149,66 +141,15 @@ function GameContent() {
     setMazeData(generated);
     setLoading(false);
 
-    if (isInfinite && !useGameStore.getState().activeTrade) {
-      setShowTerminal(true);
-    } else {
-      setTimeout(() => {
-        startGame();
-      }, 120);
-    }
+    setTimeout(() => {
+      startGame();
+    }, 120);
   }, [resetGame, setMazeData, startGame, isSovereign, sovereignId, sovereignMood, isInfinite]);
 
   useEffect(() => {
     initMaze(stageNum);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageNum, isSovereign, sovereignId]);
-
-  // ── Flash Trade Polling & Events ─────────────────────────────
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (activeTrade && (phase === 'playing' || phase === 'choosing_direction' || phase === 'moving')) {
-      let lastPrice = activeTrade.entryPrice;
-      interval = setInterval(async () => {
-        const livePrice = await flashTradeService.getLivePrice('SOL');
-        const pnl = flashTradeService.calculatePnL(activeTrade, livePrice);
-        updatePnL(pnl);
-
-        // Check volatility for Flash Event (Dynamic Trap)
-        const change = Math.abs(livePrice - lastPrice) / lastPrice;
-        if (change > 0.0001) { // lowered threshold to 0.01% to ensure it triggers for demo
-           triggerFlashEvent(true);
-           setTimeout(() => triggerFlashEvent(false), 2000); 
-        }
-        lastPrice = livePrice;
-      }, 3000); // Poll every 3 seconds
-    }
-    return () => clearInterval(interval);
-  }, [activeTrade, phase, flashTradeService, updatePnL, triggerFlashEvent]);
-
-  // ── Terminal Live Preview Polling ────────────────────────────
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (showTerminal && !activeTrade) {
-      flashTradeService.getLivePrice('SOL').then(setLiveTerminalPrice);
-      interval = setInterval(() => {
-        flashTradeService.getLivePrice('SOL').then(setLiveTerminalPrice);
-      }, 2000);
-    }
-    return () => clearInterval(interval);
-  }, [showTerminal, activeTrade, flashTradeService]);
-
-  const handleTradeSelect = async (type: 'LONG' | 'SHORT', margin: number, leverage: number) => {
-    setTerminalLoading(true);
-    const pos = await flashTradeService.openPosition('SOL', type);
-    openTrade(pos);
-    setTerminalLoading(false);
-    setShowTerminal(false);
-    
-    // Start the game now that trade is open
-    setTimeout(() => {
-      startGame();
-    }, 120);
-  };
 
   // ── Auto-move ENGINE ─────────────────────────────────────────
   const doAutoMove = useCallback((
@@ -260,7 +201,7 @@ function GameContent() {
         doAutoMove(nx, ny, dir, currentMaze);
       }, 220);
     } else {
-      setAvailableDirs(forward);
+      setAvailableDirs(available);
       setPhase('choosing_direction');
       isMovingRef.current = false;
     }
@@ -365,7 +306,7 @@ function GameContent() {
   }
 
   return (
-    <div className={`${styles.page} scanlines ${flashEventActive ? styles.flashEvent : ''}`}>
+    <div className={`${styles.page} scanlines`}>
       {/* ── Header ── */}
       <header className={styles.header}>
         <button id="back-btn" className="btn btn-secondary btn-sm" onClick={handleMenu}>
@@ -383,12 +324,6 @@ function GameContent() {
         </div>
 
         <div className={styles.headerRight}>
-          {activeTrade && (
-            <div className={`${styles.timerBox} ${currentPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              <span className={styles.timerIcon}>{activeTrade.type === 'LONG' ? '📈' : '📉'}</span>
-              <span className={styles.timerValue}>{currentPnL >= 0 ? '+' : ''}{currentPnL.toFixed(2)}%</span>
-            </div>
-          )}
           <div className={styles.timerBox}>
             <span className={styles.timerIcon}>⏱</span>
             <span className={styles.timerValue}>{formatTime(displayTime)}</span>
@@ -434,7 +369,6 @@ function GameContent() {
           isInfiniteMode={isInfinite}
           infiniteStageCount={infiniteCount}
           foundEasterEggs={foundEasterEggs}
-          finalPnL={activeTrade ? currentPnL : undefined}
         />
       )}
 
@@ -446,17 +380,6 @@ function GameContent() {
             <p className={styles.eggTitle}>LEGENDARY ITEM FOUND!</p>
             <p className={styles.eggName}>{showEgg}</p>
           </div>
-        </div>
-      )}
-
-      {/* ── Trader's Terminal ── */}
-      {showTerminal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <TraderTerminal 
-            livePrice={liveTerminalPrice} 
-            onTrade={handleTradeSelect} 
-            isLoading={terminalLoading} 
-          />
         </div>
       )}
     </div>

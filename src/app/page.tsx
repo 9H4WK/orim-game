@@ -116,20 +116,6 @@ export default function HomePage() {
             <p className={styles.logoSub}>The Eternal Maze</p>
           </div>
 
-          <div className={styles.featuresInside}>
-            {FEATURES.map(({ matrix, title, desc }, i) => (
-              <div key={i} className={styles.featureCell}>
-                <div className={styles.featureIcon}>
-                  <PixelIcon matrix={matrix} size={48} palette={UI_PALETTE} />
-                </div>
-                <div>
-                  <p className={styles.featureTitle}>{title}</p>
-                  <p className={styles.featureDesc}>{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
           <div className={styles.walletInside}>
             {connected ? (
               <div className={styles.connectedArea}>
@@ -169,14 +155,14 @@ export default function HomePage() {
                 ) : (
                   <div className={styles.primaryActions}>
                     <button className="btn btn-primary btn-lg" onClick={() => router.push('/stages')}>
-                      ENTER THE VOID ▶
+                      START GAME ▶
                     </button>
                     <div className={styles.subActions}>
                       <button className="btn btn-gold btn-sm" onClick={() => router.push('/architect')}>
-                        DIVINE ARCHITECT
+                        CREATE MAZE MAP
                       </button>
                       <button className="btn btn-gold btn-sm" onClick={() => router.push('/shop')}>
-                        VAULT
+                        ITEM
                       </button>
                     </div>
                   </div>
@@ -190,6 +176,20 @@ export default function HomePage() {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className={styles.featuresInside}>
+            {FEATURES.map(({ matrix, title, desc }, i) => (
+              <div key={i} className={styles.featureCell}>
+                <div className={styles.featureIcon}>
+                  <PixelIcon matrix={matrix} size={48} palette={UI_PALETTE} />
+                </div>
+                <div>
+                  <p className={styles.featureTitle}>{title}</p>
+                  <p className={styles.featureDesc}>{desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </PixelPanel>
 

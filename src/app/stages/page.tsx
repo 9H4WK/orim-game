@@ -108,6 +108,13 @@ export default function StagesPage() {
         >
           COMMUNITY LABYRINTHS
         </button>
+        <button 
+          className={styles.tabBtn}
+          style={{ borderColor: '#a78bfa', color: '#c4b5fd' }}
+          onClick={() => handleInfinite()}
+        >
+          INFINITE MAZE
+        </button>
       </div>
 
       {activeTab === 'SOLO' ? (
@@ -188,23 +195,6 @@ export default function StagesPage() {
                 </div>
               );
             })}
-          </div>
-
-          {/* ── Infinite Mode ── */}
-          <div className={styles.infiniteSection}>
-            <button
-              id="infinite-mode-btn"
-              className={styles.infiniteBtn}
-              onClick={() => handleInfinite()}
-            >
-              <span className={styles.infiniteIcon}>∞</span>
-              <div>
-                <p className={styles.infiniteTitle}>INFINITE MAZE MODE</p>
-                <p className={styles.infiniteSub}>
-                  Endless mazes generated on-chain via VRF.
-                </p>
-              </div>
-            </button>
           </div>
         </div>
       ) : (

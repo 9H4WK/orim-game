@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import styles from './DirectionPicker.module.css';
 
 type Dir = 'up' | 'right' | 'down' | 'left';
@@ -28,6 +29,23 @@ interface DirectionPickerProps {
  */
 export default function DirectionPicker({ availableDirections, onChoose }: DirectionPickerProps) {
   const has = (d: Dir) => availableDirections.includes(d);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['ArrowUp', 'w', 'W'].includes(e.key) && has('up')) {
+        onChoose('up');
+      } else if (['ArrowDown', 's', 'S'].includes(e.key) && has('down')) {
+        onChoose('down');
+      } else if (['ArrowLeft', 'a', 'A'].includes(e.key) && has('left')) {
+        onChoose('left');
+      } else if (['ArrowRight', 'd', 'D'].includes(e.key) && has('right')) {
+        onChoose('right');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [availableDirections, onChoose]);
 
   return (
     <div className={styles.dirBar}>

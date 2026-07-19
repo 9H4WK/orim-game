@@ -1,7 +1,7 @@
-# ORIM: Gamified DeFi Labyrinth
+# ORIM: Autonomous Labyrinth Ecosystem
 
 **Project Description:**
-ORIM is a "Gamified DeFi" project built on Solana. It serves as an interactive front-end for Flash Trade V2 disguised as an endless labyrinth game. Players take a Long or Short position on crypto assets before entering the maze. Real-time market volatility dynamically triggers in-game traps, and the final leaderboard ranking is determined by combining the player's escape time with their trading PnL.
+ORIM is an autonomous, endless labyrinth game built on Solana. Players navigate a living, breathing labyrinth that acts as a Sovereign Agent. The environment dynamically reacts to external data, and the final leaderboard ranking is determined by the player's escape time and survival skills.
 
 ---
 
@@ -20,7 +20,7 @@ A premium command center for creators to manage their on-chain assets.
 
 ### Magicblock Performance Engine
 **How ORIM uses the Ephemeral Rollup:**
-ORIM uses MagicBlock Ephemeral Rollups to achieve zero-latency gaming with on-chain composability. Maze navigation requires high-frequency keystrokes, which would cause severe lag and gas costs if processed directly on Layer 1. By delegating the active game state to the Ephemeral Rollup, all movements are processed instantly for free. Only the final cleared state and PnL score are seamlessly committed back to the Solana Mainnet.
+ORIM uses MagicBlock Ephemeral Rollups to achieve zero-latency gaming with on-chain composability. Maze navigation requires high-frequency keystrokes, which would cause severe lag and gas costs if processed directly on Layer 1. By delegating the active game state to the Ephemeral Rollup, all movements are processed instantly for free. Only the final cleared state and score are seamlessly committed back to the Solana Mainnet.
 - **Magicblock VRF:** Ensures fair and tamper-proof randomness for the on-chain Infinite Maze mode, guaranteeing that every procedural layout is both unique and verified.
 
 ### Dual-Tab Discovery System
@@ -31,7 +31,8 @@ A community-driven navigation hub for all labyrinth types.
 
 ### Sovereign Gameplay Engine
 - Deterministic Generation: Sovereign mazes derive their layout directly from their Solana Address. This means every asset is a unique, permanent world.
-- Retro-Cyber Aesthetics: High-fidelity pixel art combined with modern glassmorphism and dynamic CRT scanline effects.
+- M.C. Escher Aesthetics: The visual engine has been upgraded to feature impossible geometry, true 3D axonometric wall blocks, monochrome checkered floor tessellations, and a surreal rotating Void background.
+- Clean & Intuitive UI: The dashboard and menu systems have been redesigned for maximum space efficiency and readability, ensuring the focus remains on the labyrinth itself.
 
 ---
 

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MazeData } from '@/lib/maze/generator';
-import { FlashTradePosition } from '@/lib/blockchain/flash-trade-service';
 
 export type GamePhase =
   | 'idle'
@@ -41,11 +40,6 @@ export interface GameState {
   // Path history (for backtracking detection)
   pathHistory: { x: number; y: number }[];
 
-  // Flash Trade Integration
-  activeTrade: FlashTradePosition | null;
-  currentPnL: number;
-  flashEventActive: boolean;
-
   // Actions
   setStage: (stage: number, infinite?: boolean) => void;
   setMazeData: (data: MazeData) => void;
@@ -58,11 +52,6 @@ export interface GameState {
   clearStage: () => void;
   findEasterEgg: (id: string) => void;
   resetGame: () => void;
-
-  // Flash Trade Actions
-  openTrade: (position: FlashTradePosition) => void;
-  updatePnL: (pnl: number) => void;
-  triggerFlashEvent: (active: boolean) => void;
 }
 
 export const useGameStore = create<GameState>()(
@@ -84,10 +73,6 @@ export const useGameStore = create<GameState>()(
       stars: 0,
       foundEasterEggs: [],
       pathHistory: [],
-
-      activeTrade: null,
-      currentPnL: 0,
-      flashEventActive: false,
 
       setStage: (stage, infinite = false) =>
         set({ currentStage: stage, isInfiniteMode: infinite, phase: 'loading' }),
@@ -111,7 +96,6 @@ export const useGameStore = create<GameState>()(
           clearTime: null,
           stars: 0,
           foundEasterEggs: [],
-          flashEventActive: false, // reset flash event on start
         }),
 
       movePlayer: (x, y, dir) => {
@@ -195,14 +179,7 @@ export const useGameStore = create<GameState>()(
           stars: 0,
           foundEasterEggs: [],
           pathHistory: [],
-          activeTrade: null,
-          currentPnL: 0,
-          flashEventActive: false,
         }),
-
-      openTrade: (pos) => set({ activeTrade: pos, currentPnL: 0 }),
-      updatePnL: (pnl) => set({ currentPnL: pnl }),
-      triggerFlashEvent: (active) => set({ flashEventActive: active }),
     }),
     {
       name: 'orim-game',

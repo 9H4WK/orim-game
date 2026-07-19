@@ -123,7 +123,7 @@ function drawPlayer(
   if (accId && accId !== 'acc_wings') drawSlot(accId);
 }
 
-function drawCell(
+function drawFloor(
   ctx: CanvasRenderingContext2D,
   cell: Cell,
   x: number,
@@ -133,54 +133,77 @@ function drawCell(
   const px = x * CELL;
   const py = y * CELL;
 
-  // Background for the floor
+  // Escher Tessellation Floor (Checkered high contrast)
+  const isDarkFloor = (x + y) % 2 === 0;
   if (cell.isStart) {
-    ctx.fillStyle = '#1e2142';
+    ctx.fillStyle = '#ffffff'; // Stark white start
   } else if (cell.isEnd) {
-    ctx.fillStyle = '#130e26';
+    ctx.fillStyle = '#111111'; // Void black end
   } else if (visited) {
-    ctx.fillStyle = '#150f2b';
+    ctx.fillStyle = isDarkFloor ? '#e0e0e0' : '#ffffff'; // Visited glowing path
   } else {
-    ctx.fillStyle = '#0a0817';
+    ctx.fillStyle = isDarkFloor ? '#1a1a1a' : '#2a2a2a'; // Unvisited void floor
   }
   ctx.fillRect(px, py, CELL, CELL);
 
   // Success/End portal effect
   if (cell.isEnd) {
     const grd = ctx.createRadialGradient(px + CELL/2, py + CELL/2, 2, px + CELL/2, py + CELL/2, CELL/2);
-    grd.addColorStop(0, 'rgba(167,139,250,0.6)');
-    grd.addColorStop(1, 'rgba(167,139,250,0)');
+    grd.addColorStop(0, 'rgba(255,255,255,0.9)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = grd;
     ctx.fillRect(px, py, CELL, CELL);
     ctx.font = `${CELL * 0.5}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🌀', px + CELL / 2, py + CELL / 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('👁', px + CELL / 2, py + CELL / 2);
   }
+}
 
-  // WALLS
-  const WALL_COLOR = '#4a2c1a'; // Dirt
-  const GRASS_COLOR = '#10b981'; // Green
-  const BEVEL = 3;
-  const W = WALL_THICKNESS;
+function drawWall(
+  ctx: CanvasRenderingContext2D,
+  cell: Cell,
+  x: number,
+  y: number
+) {
+  const px = x * CELL;
+  const py = y * CELL;
 
-  if (cell.walls.top) {
-    ctx.fillStyle = WALL_COLOR;
-    ctx.fillRect(px, py, CELL, W + BEVEL);
-    ctx.fillStyle = GRASS_COLOR;
-    ctx.fillRect(px, py, CELL, BEVEL);
+  const TOP_COLOR = '#dddddd'; // Roof of the wall
+  const FRONT_FACE = '#777777'; // Front facing depth
+  const RIGHT_FACE = '#444444'; // Side facing depth
+  const W = WALL_THICKNESS + 2; 
+  const H = 14; // Height of the 3D wall protruding upwards
+
+  // Helper to draw a 3D block
+  const drawBlock = (bx: number, by: number, bw: number, bh: number) => {
+    // Front face (depth)
+    ctx.fillStyle = FRONT_FACE;
+    ctx.fillRect(bx, by - H + bh, bw, H);
+    // Roof
+    ctx.fillStyle = TOP_COLOR;
+    ctx.fillRect(bx, by - H, bw, bh);
+    // Right face shadow for depth illusion
+    ctx.fillStyle = RIGHT_FACE;
+    ctx.fillRect(bx + bw - 2, by - H, 2, bh + H);
+  };
+
+  // Only draw right and bottom walls to avoid double-drawing shared edges
+  // (Since left wall of cell X is right wall of cell X-1, etc.)
+  // However, for edges of the maze, we must draw top and left.
+
+  if (cell.walls.top && y === 0) {
+    drawBlock(px, py, CELL, W);
+  }
+  if (cell.walls.left && x === 0) {
+    drawBlock(px, py, W, CELL);
   }
   if (cell.walls.right) {
-    ctx.fillStyle = WALL_COLOR;
-    ctx.fillRect(px + CELL - W, py, W, CELL);
+    drawBlock(px + CELL - W, py, W, CELL);
   }
   if (cell.walls.bottom) {
-    ctx.fillStyle = WALL_COLOR;
-    ctx.fillRect(px, py + CELL - W, CELL, W);
-  }
-  if (cell.walls.left) {
-    ctx.fillStyle = WALL_COLOR;
-    ctx.fillRect(px, py, W, CELL);
+    drawBlock(px, py + CELL - W, CELL, W);
   }
 }
 
@@ -218,7 +241,13 @@ export default function MazeCanvas({
     for (let y = 0; y < maze.height; y++) {
       for (let x = 0; x < maze.width; x++) {
         const visited = visitedRef.current.has(`${x},${y}`);
-        drawCell(ctx, maze.grid[y][x], x, y, visited);
+        drawFloor(ctx, maze.grid[y][x], x, y, visited);
+      }
+    }
+
+    for (let y = 0; y < maze.height; y++) {
+      for (let x = 0; x < maze.width; x++) {
+        drawWall(ctx, maze.grid[y][x], x, y);
       }
     }
 
