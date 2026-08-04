@@ -279,6 +279,8 @@ export function generateMaze(
   grid[0][0].walls.left = false; // entrance opening
   grid[height - 1][width - 1].walls.right = false; // exit opening
 
+  const solution = findSolutionPath(grid, 0, 0, width - 1, height - 1);
+
   // Place Easter Eggs using separate RNG bytes
   if (easterEggIds && easterEggIds.length > 0) {
     const eggCount = Math.min(easterEggIds.length, Math.floor(rng() * 3) + 1);
@@ -303,7 +305,6 @@ export function generateMaze(
     }
   }
 
-  const solution = findSolutionPath(grid, 0, 0, width - 1, height - 1);
   const junctions = findJunctions(grid);
 
   return { grid, width, height, junctions, solution };

@@ -165,6 +165,8 @@ function GameContent() {
     const fromOpp   = lastDir ? OPPOSITE[lastDir] : null;
     const forward   = fromOpp ? available.filter(d => d !== fromOpp) : available;
 
+    const isAutoplay = typeof window !== 'undefined' && window.location.href.includes('autoplay');
+    
     if (forward.length === 0) {
       recordMistake();
       if (fromOpp && available.includes(fromOpp)) {
@@ -178,13 +180,13 @@ function GameContent() {
             setPhase('playing');
             doAutoMove(nx, ny, fromOpp!, currentMaze);
           }
-        }, 300);
+        }, isAutoplay ? 16 : 300);
       }
       return;
     }
 
-    if (forward.length === 1) {
-      const dir = forward[0];
+    if (forward.length === 1 || (isAutoplay && forward.length > 0)) {
+      const dir = forward.length === 1 ? forward[0] : forward[Math.floor(Math.random() * forward.length)];
       const { dx, dy } = DIR_DELTA[dir];
       const nx = cx + dx, ny = cy + dy;
 
@@ -199,7 +201,7 @@ function GameContent() {
         isMovingRef.current = false;
         setPhase('playing');
         doAutoMove(nx, ny, dir, currentMaze);
-      }, 220);
+      }, isAutoplay ? 16 : 220);
     } else {
       setAvailableDirs(available);
       setPhase('choosing_direction');

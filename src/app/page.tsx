@@ -11,6 +11,7 @@ import PixelIcon from '@/components/ui/PixelIcon';
 import PixelPanel from '@/components/ui/PixelPanel';
 import PixelBackground from '@/components/ui/PixelBackground';
 import HeroChibi from '@/components/character/HeroChibi';
+import RankingBoard from '@/components/ui/RankingBoard';
 import { 
   LOGO_O, LOGO_R, LOGO_I, LOGO_M, 
   ICON_FEAT_QUEST, ICON_FEAT_ARCHITECT, 
@@ -206,29 +207,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Maze Roadmap Section ── */}
-        <section className={styles.roadmapSection}>
-          <h2 className={styles.sectionTitle}>ECOSYSTEM ROADMAP</h2>
-          <div className={styles.mazeMapContainer}>
-            <div className={styles.mazeVerticalPath}>
-              {ROADMAP.map((item, i) => (
-                <div key={i} className={`${styles.mazeChamber} ${i % 2 === 0 ? styles.chamberLeft : styles.chamberRight}`}>
-                  <div className={styles.chamberInner}>
-                    <div className={styles.chamberHeader}>
-                      <span className={styles.chamberPhase}>{item.phase}</span>
-                      <h4 className={styles.chamberTitle}>{item.title}</h4>
-                    </div>
-                    <p className={styles.chamberDesc}>{item.desc}</p>
-                  </div>
-                  {i < ROADMAP.length - 1 && (
-                    <div className={`${styles.mazeCorridor} ${i % 2 === 0 ? styles.corridorRight : styles.corridorLeft}`}>
-                      <div className={styles.corridorLine} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* ── Ranking Board Section ── */}
+        <section id="rankingBoard" className={styles.rankingSection} style={{ width: '100%', marginTop: '100px', marginBottom: '80px' }}>
+          <RankingBoard />
         </section>
 
         <p className={styles.footer}>
