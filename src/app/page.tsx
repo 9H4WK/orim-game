@@ -200,10 +200,9 @@ export default function HomePage() {
             {mounted && highestStage > 0 ? `Play stage ${nextStage}` : 'Play now'} <b aria-hidden="true" />
           </Link>
 
+          {mounted && connected && (
           <div className={styles.status}>
-            {!mounted || !connected ? (
-              <span>No wallet needed · <Link href="/stages">All worlds</Link> · <Link href="/architect">Build a maze</Link></span>
-            ) : profileExists === null ? (
+            {profileExists === null ? (
               <span><i className={styles.dot} />Syncing with adventure ledger…</span>
             ) : profileExists === false ? (
               <span>
@@ -217,6 +216,7 @@ export default function HomePage() {
             )}
             {initError && <span className={styles.error}>{initError}</span>}
           </div>
+          )}
         </div>
       </section>
 
