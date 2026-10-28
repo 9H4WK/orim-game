@@ -1,22 +1,29 @@
 import type { Metadata } from 'next';
-import { Press_Start_2P, Outfit } from 'next/font/google';
+import { Bowlby_One, Inter_Tight, Silkscreen } from 'next/font/google';
 import './globals.css';
 import { WalletContextProvider } from '@/components/wallet/WalletProvider';
 
-const pixelFont = Press_Start_2P({
+const displayFont = Bowlby_One({
   weight: '400',
   subsets: ['latin'],
-  variable: '--font-pixel',
+  variable: '--font-bowlby',
 });
 
-const outfitFont = Outfit({
+const bodyFont = Inter_Tight({
+  weight: ['400', '500', '600'],
   subsets: ['latin'],
-  variable: '--font-legendary',
+  variable: '--font-inter-tight',
+});
+
+const pixelFont = Silkscreen({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-silkscreen',
 });
 
 export const metadata: Metadata = {
-  title: 'ORIM — Pixel Maze Adventure',
-  description: 'A Web3 pixel art maze game on Solana. Navigate 100+ stages, collect stars, and customize your character. Powered by MagicBlock VRF.',
+  title: 'ORIM — Find the way out',
+  description: 'A pixel labyrinth game on Solana. Clear 100 stages across five worlds, equip loot that changes your hero, and mint mazes of your own. Powered by MagicBlock VRF.',
 };
 
 export default function RootLayout({
@@ -25,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${pixelFont.variable} ${outfitFont.variable}`}>
-      <body className="pixel-bg">
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${pixelFont.variable}`}>
+      <body>
         <WalletContextProvider>
           {children}
         </WalletContextProvider>

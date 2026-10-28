@@ -15,6 +15,7 @@ import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import { EASTER_EGG_ITEM_IDS, getItemById } from '@/lib/shop/items';
+import { play, isMuted, setMuted } from '@/lib/sfx';
 
 import DirectionPicker from '@/components/maze/DirectionPicker';
 import styles from './game.module.css';
@@ -83,6 +84,7 @@ function GameContent() {
   const [showEgg, setShowEgg]         = useState<string | null>(null);
   const [infiniteCount, setInfiniteCount] = useState(0);
   const [availableDirs, setAvailableDirs] = useState<Dir[]>([]);
+  const touchRef = useRef<{ x: number; y: number } | null>(null);
 
   // Refs to avoid stale closures
   const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -143,6 +145,7 @@ function GameContent() {
 
     setTimeout(() => {
       startGame();
+      play('start');
     }, 120);
   }, [resetGame, setMazeData, startGame, isSovereign, sovereignId, sovereignMood, isInfinite]);
 
@@ -161,7 +164,12 @@ function GameContent() {
     const cell = currentMaze.grid[cy]?.[cx];
     if (!cell) return;
 
-    const available = getAvailableDirections(cell);
+    // The entrance and exit are open to the outside; only offer turns that stay inside
+    const available = getAvailableDirections(cell).filter(d => {
+      const { dx, dy } = DIR_DELTA[d];
+      const nx = cx + dx, ny = cy + dy;
+      return nx >= 0 && ny >= 0 && nx < currentMaze.width && ny < currentMaze.height;
+    });
     const fromOpp   = lastDir ? OPPOSITE[lastDir] : null;
     const forward   = fromOpp ? available.filter(d => d !== fromOpp) : available;
 
@@ -220,7 +228,8 @@ function GameContent() {
   // ── Handle user direction choice ─────────────────────────────
   const handleChoose = useCallback((dir: Dir) => {
     const currentMaze = mazeRef.current;
-    if (!currentMaze) return;
+    // One choice per junction, whether it came from a tap, a swipe or a key
+    if (!currentMaze || useGameStore.getState().phase !== 'choosing_direction') return;
 
     const { dx, dy } = DIR_DELTA[dir];
     const px = useGameStore.getState().playerX;
@@ -231,6 +240,7 @@ function GameContent() {
 
     setPhase('moving');
     isMovingRef.current = true;
+    play('choose');
 
     moveRef.current = setTimeout(() => {
       movePlayer(nx, ny, dir);
@@ -251,6 +261,7 @@ function GameContent() {
     foundEgg(id);
     addItem(id);
     const item = getItemById(id);
+    play('loot');
     setShowEgg(item?.name || id);
     setTimeout(() => setShowEgg(null), 3500);
   }, [foundEasterEggs, findEasterEgg, foundEgg, addItem]);
@@ -290,13 +301,38 @@ function GameContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, isSovereign, sovereignId, agentService]);
 
+  // ── Sounds + haptics ─────────────────────────────────────────
+  const [muted, setMutedState] = useState(false);
+  useEffect(() => { setMutedState(isMuted()); }, []);
+  const toggleSound = () => { const next = !muted; setMuted(next); setMutedState(next); if (!next) play('choose'); };
+
+  const lastStep = useRef('');
+  useEffect(() => {
+    const key = `${playerX},${playerY}`;
+    if (lastStep.current && lastStep.current !== key && phase !== 'clear') play('step');
+    lastStep.current = key;
+  }, [playerX, playerY, phase]);
+
+  useEffect(() => {
+    if (phase === 'choosing_direction') play('junction');
+    if (phase === 'clear') play('clear');
+  }, [phase]);
+
+  const lastMistakes = useRef(0);
+  useEffect(() => {
+    if (mistakes > lastMistakes.current) play('deadEnd');
+    lastMistakes.current = mistakes;
+  }, [mistakes]);
+
   // ── Render: loading ──────────────────────────────────────────
+  const liveStars = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
+
   if (!mounted || loading || !maze) {
     return (
       <div className={styles.loading}>
         <div className={styles.loadingBox}>
           <p className={styles.loadingTitle}>ORIM</p>
-          <p className={styles.loadingText}>GENERATING MAZE...</p>
+          <p className={styles.loadingText}>Generating maze…</p>
           <div className={styles.loadingDots}>
             <span className="px-loading">●</span>
             <span className="px-loading" style={{ animationDelay: '0.2s' }}>●</span>
@@ -309,45 +345,88 @@ function GameContent() {
 
   return (
     <div className={`${styles.page} scanlines`}>
-      {/* ── Header ── */}
+      {/* ── HUD ── */}
       <header className={styles.header}>
-        <button id="back-btn" className="btn btn-secondary btn-sm" onClick={handleMenu}>
-          ◀ MENU
+        <button id="back-btn" className={styles.back} onClick={handleMenu} aria-label="Back to worlds">
+          ←
         </button>
 
         <div className={styles.headerCenter}>
+          <span className={styles.worldTag}>
+            {isSovereign
+              ? '▶ Community'
+              : isInfinite
+                ? '▶ Infinite run'
+                : `▶ ${['Pixel Forest', 'Crystal Cave', 'Shadow Realm', 'Fire Mountain', 'Golden Palace'][Math.min(4, Math.floor((stageNum - 1) / 20))]}`}
+          </span>
           <span className={styles.stageName}>
-            {isSovereign 
-              ? 'SOVEREIGN LABYRINTH' 
-              : isInfinite 
-                ? `∞ INFINITE #${infiniteCount + 1}` 
-                : `STAGE ${stageNum}`}
+            {isSovereign
+              ? 'Sovereign labyrinth'
+              : isInfinite
+                ? `Infinite #${infiniteCount + 1}`
+                : `Stage ${stageNum}`}
           </span>
         </div>
 
         <div className={styles.headerRight}>
+          <button
+            className={styles.sound}
+            onClick={toggleSound}
+            aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
+            aria-pressed={!muted}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />
+              {muted
+                ? <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                : <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />}
+            </svg>
+          </button>
+          <div className={styles.starsBox} aria-label={`${liveStars} stars if you finish now`}>
+            {[1, 2, 3].map(n => (
+              <span key={n} className={n <= liveStars ? styles.starOn : styles.starOff}>★</span>
+            ))}
+            <span className={styles.turnsInline} aria-label={`${mistakes} wrong turns`}>{mistakes}</span>
+          </div>
           <div className={styles.timerBox}>
-            <span className={styles.timerIcon}>⏱</span>
             <span className={styles.timerValue}>{formatTime(displayTime)}</span>
           </div>
-          <div className={styles.mistakeBox}>
-            <span>💢</span>
+          <div className={`${styles.mistakeBox} ${mistakes > 0 ? styles.mistakeHit : ''}`} key={mistakes}>
+            <span className={styles.mistakeLabel}>Wrong turns</span>
             <span className={styles.mistakeCount}>{mistakes}</span>
           </div>
         </div>
       </header>
 
       {/* ── Maze canvas ── */}
-      <main className={styles.main}>
+      <main
+        className={styles.main}
+        onTouchStart={e => { const t = e.touches[0]; touchRef.current = { x: t.clientX, y: t.clientY }; }}
+        onTouchEnd={e => {
+          const start = touchRef.current;
+          touchRef.current = null;
+          if (!start || phase !== 'choosing_direction') return;
+          const t = e.changedTouches[0];
+          const dx = t.clientX - start.x;
+          const dy = t.clientY - start.y;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+          const dir: Dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+          if (availableDirs.includes(dir)) handleChoose(dir);
+        }}
+      >
         <div className={styles.mazeWrap}>
+          <span className={styles.mazeGlow} aria-hidden="true" />
           <MazeCanvas
             maze={maze}
             playerX={playerX}
             playerY={playerY}
             playerDirection={playerDirection}
             onEasterEggFound={handleEggFound}
+            choices={phase === 'choosing_direction' ? availableDirs : undefined}
+            onChoose={handleChoose}
           />
         </div>
+        <p className={styles.keys}>Your hero runs on its own · choose at junctions with <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> or WASD</p>
       </main>
 
       {/* ── Direction picker (bottom bar, no overlay) ── */}
@@ -377,9 +456,9 @@ function GameContent() {
       {/* ── Easter egg popup ── */}
       {showEgg && (
         <div className={styles.eggPopup}>
-          <span className={styles.eggEmoji}>🎁</span>
+          <span className={styles.eggEmoji} aria-hidden="true" />
           <div>
-            <p className={styles.eggTitle}>LEGENDARY ITEM FOUND!</p>
+            <p className={styles.eggTitle}>Legendary item found</p>
             <p className={styles.eggName}>{showEgg}</p>
           </div>
         </div>

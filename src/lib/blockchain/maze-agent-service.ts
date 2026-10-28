@@ -11,7 +11,7 @@ import {
   mplTokenMetadata 
 } from '@metaplex-foundation/mpl-token-metadata';
 import { generateSigner, publicKey, percentAmount, base58 } from '@metaplex-foundation/umi';
-import { SolanaAgentKit } from "solana-agent-kit";
+import type { SolanaAgentKit } from "solana-agent-kit";
 
 export interface MazeAgentConfig {
   name: string;
@@ -49,6 +49,8 @@ export class MazeAgentService {
     try {
       // Fallback to a dummy key if wallet.secretKey is not available
       const secretKey = this.wallet.secretKey || "5886E33333333333333333333333333333333333333333333333333333333333";
+      // Loaded on demand: the kit is large and only needed when a labyrinth is summoned
+      const { SolanaAgentKit } = await import("solana-agent-kit");
       this.agentKit = new SolanaAgentKit(
         secretKey,
         this.endpoint,

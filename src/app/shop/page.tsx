@@ -1,247 +1,323 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { usePlayerStore } from '@/lib/store/playerStore';
-import { getShopItems, ShopItem, RARITY_COLORS, ItemCategory } from '@/lib/shop/items';
+import { SHOP_ITEMS, getShopItems, getItemById, ShopItem, ItemCategory } from '@/lib/shop/items';
 import { OrimBlockchainService } from '@/lib/blockchain/program-service';
+import PixelIcon from '@/components/ui/PixelIcon';
+import KnightSprite from '@/components/character/KnightSprite';
+import { HEROES, HERO_IDS } from '@/lib/maze/knight';
+import type { CSSProperties } from 'react';
+import WorldShell from '@/components/ui/WorldShell';
+import { play } from '@/lib/sfx';
 import styles from './shop.module.css';
 
-const CATEGORIES: { id: ItemCategory | 'all'; label: string; emoji: string }[] = [
-  { id: 'all',       label: 'ALL',        emoji: '🛒' },
-  { id: 'hat',       label: 'Hats',       emoji: '🧢' },
-  { id: 'shirt',     label: 'Shirts',     emoji: '👕' },
-  { id: 'pants',     label: 'Pants',      emoji: '👖' },
-  { id: 'shoes',     label: 'Shoes',      emoji: '👟' },
-  { id: 'accessory', label: 'Accessory',  emoji: '💍' },
+type Filter = ItemCategory | 'all' | 'owned';
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'all',       label: 'All' },
+  { id: 'owned',     label: 'Owned' },
+  { id: 'hat',       label: 'Hats' },
+  { id: 'shirt',     label: 'Armour' },
+  { id: 'pants',     label: 'Greaves' },
+  { id: 'shoes',     label: 'Boots' },
+  { id: 'accessory', label: 'Extras' },
 ];
 
-import PixelIcon from '@/components/ui/PixelIcon';
-import HeroChibi from '@/components/character/HeroChibi';
+const SLOTS: { id: ItemCategory; label: string }[] = [
+  { id: 'hat', label: 'Head' },
+  { id: 'shirt', label: 'Armour' },
+  { id: 'pants', label: 'Legs' },
+  { id: 'shoes', label: 'Feet' },
+  { id: 'accessory', label: 'Extra' },
+];
+
+const CAPES = new Set(['egg_rainbow', 'egg_dark_cape']);
+const FACE = new Set(['egg_ghost', 'hat_cyber', 'acc_shades']);
+const FLOATING = new Set(['acc_wand', 'acc_compass', 'egg_pixel_pet']);
+
+/** Card previews: the hero wearing the item, framed on the part it changes */
+function thumbFacing(item: ShopItem) {
+  return CAPES.has(item.id) || item.id === 'acc_wings' || item.id === 'acc_sword' ? 'up' as const : 'down' as const;
+}
+
+function thumbFrame(item: ShopItem): CSSProperties {
+  // Zoom k around the point that puts canvas height c (0–1) at the centre of the card
+  const at = (k: number, c: number) => {
+    const origin = (c - 0.5 / k) / (1 - 1 / k);
+    return { transform: `scale(${k})`, transformOrigin: `50% ${(origin * 100).toFixed(1)}%` };
+  };
+  if (FACE.has(item.id)) return at(2.3, 0.55);
+  if (item.category === 'hat') return at(1.9, 0.33);
+  if (CAPES.has(item.id)) return at(1.4, 0.68);
+  if (item.category === 'shirt') return at(2.2, 0.735);
+  if (item.category === 'pants') return at(3.2, 0.885);
+  if (item.category === 'shoes') return at(4, 0.95);
+  if (FLOATING.has(item.id)) return at(1.35, 0.6);
+  return at(1.15, 0.62);
+}
+
+const SLOT_NAMES: Record<ItemCategory, string> = {
+  hat: 'headgear',
+  shirt: 'armour',
+  pants: 'greaves',
+  shoes: 'boots',
+  accessory: 'relic',
+};
+
+function priceLabel(item: ShopItem) {
+  if (item.isEasterEgg) return 'Found in a maze';
+  return item.currency === 'COINS' ? `${item.price} coins` : `${item.price} ${item.currency}`;
+}
 
 export default function ShopPage() {
-  const router = useRouter();
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const { connected } = useWallet();
-  const { coins, ownedItems, equippedItems, addItem, equipItem, spendCoins } = usePlayerStore();
+  const { setVisible } = useWalletModal();
+  const { coins, ownedItems, equippedItems, addItem, equipItem, spendCoins, hero, setHero } = usePlayerStore();
   const [mounted, setMounted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const [activeCategory, setActiveCategory] = useState<ItemCategory | 'all'>('all');
+  const [filter, setFilter] = useState<Filter>('all');
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
-  const [buySuccess, setBuySuccess] = useState(false);
-  const [buyError, setBuyError] = useState('');
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const allItems = getShopItems();
-  const filtered = activeCategory === 'all'
-    ? allItems
-    : allItems.filter(i => i.category === activeCategory);
+  useEffect(() => { setMounted(true); }, []);
+
+  const owned = (id: string) => mounted && ownedItems.includes(id);
+  const isEquipped = (item: ShopItem) => mounted && equippedItems[item.category] === item.id;
+
+  // Loot found in mazes appears once it is yours
+  const catalogue = [...getShopItems(), ...SHOP_ITEMS.filter(i => i.isEasterEgg && owned(i.id))];
+  const hidden = SHOP_ITEMS.filter(i => i.isEasterEgg && !owned(i.id));
+  const hiddenCount = hidden.length;
+  const filtered = catalogue.filter(i =>
+    filter === 'all' ? true : filter === 'owned' ? owned(i.id) : i.category === filter,
+  );
+
+  const select = (item: ShopItem) => {
+    setMessage(null);
+    play('choose');
+    setSelectedItem(prev => (prev?.id === item.id ? null : item));
+  };
+
+  const tryOn = {
+    ...(mounted ? equippedItems : {}),
+    ...(selectedItem ? { [selectedItem.category]: selectedItem.id } : {}),
+  };
 
   const handleBuy = async (item: ShopItem) => {
-    if (!connected || !wallet) {
-      setBuyError('🪪 CONNECT WALLET FIRST');
+    // Coins are earned in-game, so coin items never need a wallet
+    if (item.currency !== 'COINS' && (!connected || !wallet)) {
+      setVisible(true);
       return;
     }
 
     setIsProcessing(true);
-    setBuyError('');
+    setMessage(null);
 
     try {
       if (item.currency === 'COINS') {
-        const ok = spendCoins(item.price as number);
-        if (!ok) {
-          setBuyError('💰 NOT ENOUGH COINS!');
-          setIsProcessing(false);
+        if (!spendCoins(item.price as number)) {
+          setMessage({ ok: false, text: `You need ${item.price - coins} more coins. Clear stages to earn them.` });
           return;
         }
       } else {
         // ACTUAL ON-CHAIN TRANSACTION
+        if (!wallet) throw new Error('wallet not connected');
         const service = new OrimBlockchainService(connection, wallet);
-        
         if (item.currency === 'SOL') {
           await service.purchaseWithSol(Number(item.price) * 1e9, item.id);
         } else if (item.currency === 'USDC') {
           await service.purchaseWithUsdc(Number(item.price), item.id, wallet, connection);
         } else {
-          throw new Error('UNSUPPORTED CURRENCY');
+          throw new Error(`${item.currency} payments are not available yet`);
         }
       }
 
       addItem(item.id);
-      setBuySuccess(true);
-      setTimeout(() => {
-        setBuySuccess(false);
-        setSelectedItem(null);
-      }, 2000);
-    } catch (err: any) {
+      equipItem(item.category, item.id);
+      play('loot');
+      setMessage({ ok: true, text: 'Unlocked and equipped.' });
+    } catch (err) {
       console.error('Purchase Failed:', err);
-      setBuyError(`❌ FAILED: ${err.message || 'TRANSACTION REJECTED'}`);
+      setMessage({ ok: false, text: `Purchase failed: ${err instanceof Error ? err.message : 'transaction rejected'}` });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleEquip = (item: ShopItem) => {
-    const currentlyEquipped = equippedItems[item.category];
-    if (currentlyEquipped === item.id) {
-      equipItem(item.category, null);
-    } else {
-      equipItem(item.category, item.id);
-    }
+  const toggleEquip = (item: ShopItem) => {
+    play('choose');
+    equipItem(item.category, isEquipped(item) ? null : item.id);
   };
 
   return (
-    <div className={`${styles.page} scanlines`}>
-      {/* ── Header ── */}
-      <header className={styles.header}>
-        <button className="btn btn-secondary btn-sm" onClick={() => router.push('/stages')}>
-          ◀ BACK
-        </button>
-        <h1 className={styles.title}>🛒 TREASURE SHOP</h1>
-        <div className={styles.headerStats}>
-          <div className={styles.heroSummary}>
-            <HeroChibi size={60} animate={true} />
-            <div className={styles.heroLabel}>ADVENTURER</div>
+    <WorldShell active="items">
+      <div className={`${styles.page} ${selectedItem ? styles.pageSheet : ''}`}>
+        <header className={styles.head}>
+          <h1 className={styles.title}>Items</h1>
+          <span className={styles.coins}><i aria-hidden="true" />{mounted ? coins : 0} coins</span>
+        </header>
+
+        {/* ── Hero ─────────────────────────────── */}
+        <aside className={styles.hero}>
+          <div className={styles.heroPick} role="radiogroup" aria-label="Choose your hero">
+            {HERO_IDS.map(id => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={mounted && hero === id}
+                className={`${styles.heroOpt} ${mounted && hero === id ? styles.heroOn : ''}`}
+                onClick={() => { play('choose'); setHero(id); }}
+              >
+                <span className={styles.heroFace}>{mounted && <KnightSprite hero={id} still />}</span>
+                <span>{HEROES[id].name}</span>
+              </button>
+            ))}
           </div>
-          <div className={styles.coins}>
-            <span className={styles.coinIcon}>🪙</span>
-            <span className={styles.coinValue}>{mounted ? coins : 0}</span>
+          <div className={styles.stage}>
+            <div className={styles.chibi}>
+              {mounted && (
+                <KnightSprite hero={hero} gear={tryOn} />
+              )}
+            </div>
+            <div className={styles.glow} />
+            <div className={styles.rock} />
           </div>
-        </div>
-      </header>
 
-      {/* ── Category tabs ── */}
-      <div className={styles.tabs}>
-        {CATEGORIES.map(cat => (
-          <button
-            key={cat.id}
-            id={`tab-${cat.id}`}
-            className={`${styles.tab} ${activeCategory === cat.id ? styles.tabActive : ''}`}
-            onClick={() => setActiveCategory(cat.id)}
-          >
-            <span>{cat.emoji}</span>
-            <span className={styles.tabLabel}>{cat.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── Items grid ── */}
-      <div className={styles.grid}>
-        {mounted && filtered.map(item => {
-          const owned   = ownedItems.includes(item.id);
-          const equipped = equippedItems[item.category] === item.id;
-          const rarityColor = RARITY_COLORS[item.rarity];
-
-          return (
-            <div
-              key={item.id}
-              id={`item-${item.id}`}
-              className={`${styles.itemCard} ${equipped ? styles.itemEquipped : ''}`}
-              style={{ borderColor: equipped ? '#fbbf24' : undefined }}
-              onClick={() => setSelectedItem(item)}
-            >
-              <div className={styles.rarityBar} style={{ background: rarityColor }} />
-              <div className={styles.itemEmoji}>
-                {item.pixelMatrix ? (
-                  <PixelIcon matrix={item.pixelMatrix} size={48} glow={item.rarity === 'legendary'} />
-                ) : (
-                  <span>{item.emoji}</span>
-                )}
+          {selectedItem ? (
+            <div className={styles.detail} role="region" aria-label={`${selectedItem.name}, trying on`}>
+              <button type="button" className={styles.detailClose} onClick={() => setSelectedItem(null)} aria-label="Close">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
+              </button>
+              <div className={styles.detailTop}>
+                <span className={styles.detailHero}>{mounted && <KnightSprite hero={hero} gear={tryOn} />}</span>
+                <div className={styles.detailText}>
+                  <span className={`${styles.rarity} ${styles[selectedItem.rarity]}`}>{selectedItem.rarity[0].toUpperCase() + selectedItem.rarity.slice(1)} · trying on</span>
+                  <h2>{selectedItem.name}</h2>
+                  <p>{selectedItem.description}</p>
+                </div>
               </div>
-              <p className={styles.itemName}>{item.name}</p>
-              <p className={styles.itemRarity} style={{ color: rarityColor }}>
-                {item.rarity.toUpperCase()}
-              </p>
-              <div className={styles.itemPrice}>
-                {item.currency === 'COINS' ? (
-                  <span className={styles.priceCoins}>🪙 {item.price}</span>
-                ) : (
-                  <span className={styles.priceCrypto}>◎ {item.price} {item.currency}</span>
-                )}
-              </div>
-              <div className={styles.statusArea}>
-                {owned && (
-                  <div
-                    className={`${styles.ownedBadge} ${equipped ? styles.equippedBadge : ''}`}
-                    onClick={e => { e.stopPropagation(); handleEquip(item); }}
+              {owned(selectedItem.id) ? (
+                <button type="button" id={`equip-btn-${selectedItem.id}`} className={styles.action} onClick={() => toggleEquip(selectedItem)}>
+                  {isEquipped(selectedItem) ? 'Take it off' : 'Equip'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  id={`buy-btn-${selectedItem.id}`}
+                  className={styles.action}
+                  onClick={() => handleBuy(selectedItem)}
+                  disabled={isProcessing}
+                >
+                  {isProcessing
+                    ? 'Confirm in wallet…'
+                    : selectedItem.currency === 'COINS'
+                      ? `Unlock · ${selectedItem.price} coins`
+                      : connected ? `Buy · ${selectedItem.price} ${selectedItem.currency}` : 'Connect wallet to buy'}
+                </button>
+              )}
+              {message && <p className={message.ok ? styles.ok : styles.error} role="status">{message.text}</p>}
+              {!owned(selectedItem.id) && selectedItem.currency !== 'COINS' && (
+                <p className={styles.fine}>Paid on Solana devnet. Your wallet asks you to confirm.</p>
+              )}
+            </div>
+          ) : (
+            <div className={styles.slots}>
+              {SLOTS.map(slot => {
+                const id = mounted ? equippedItems[slot.id] : null;
+                const item = id ? getItemById(id) : undefined;
+                return (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    className={styles.slot}
+                    onClick={() => (item ? select(item) : setFilter(slot.id))}
                   >
-                    {equipped ? 'EQUIPPED' : 'EQUIP'}
-                  </div>
-                )}
-              </div>
+                    <span className={styles.slotIcon}>
+                      {item?.pixelMatrix ? <PixelIcon matrix={item.pixelMatrix} size={28} /> : <i />}
+                    </span>
+                    <span className={styles.slotLabel}>{slot.label}</span>
+                    <strong>{item?.name ?? 'Empty'}</strong>
+                  </button>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+          )}
+        </aside>
 
-      {/* ── Item detail modal ── */}
-      {selectedItem && (
-        <div className={styles.modal} onClick={() => setSelectedItem(null)}>
-          <div className={styles.modalCard} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalVisuals}>
-              <div className={styles.modalEmoji}>
-                {selectedItem.pixelMatrix ? (
-                  <PixelIcon matrix={selectedItem.pixelMatrix} size={64} glow={selectedItem.rarity === 'legendary'} />
-                ) : (
-                  <span>{selectedItem.emoji}</span>
-                )}
-              </div>
-              <div className={styles.modalFittingRoom}>
-                <HeroChibi 
-                  size={100} 
-                  animate={true} 
-                  overrideHat={selectedItem.category === 'hat' ? selectedItem.id : undefined}
-                  overrideShirt={selectedItem.category === 'shirt' ? selectedItem.id : undefined}
-                  overridePants={selectedItem.category === 'pants' ? selectedItem.id : undefined}
-                  overrideShoes={selectedItem.category === 'shoes' ? selectedItem.id : undefined}
-                  overrideAccessory={selectedItem.category === 'accessory' ? selectedItem.id : undefined}
-                />
-                <div className={styles.fittingLabel}>TRYING ON... {selectedItem.category.toUpperCase()}</div>
-              </div>
-            </div>
-            <h2 className={styles.modalName}>{selectedItem.name}</h2>
-            <p className={styles.modalRarity} style={{ color: RARITY_COLORS[selectedItem.rarity] }}>
-              {selectedItem.rarity.toUpperCase()}
-            </p>
-            <p className={styles.modalDesc}>{selectedItem.description}</p>
-            <div className={styles.modalPrice}>
-              {selectedItem.currency === 'COINS'
-                ? `🪙 ${selectedItem.price} COINS`
-                : `◎ ${selectedItem.price} ${selectedItem.currency}`}
-            </div>
-
-            {buyError && <p className={styles.errorMsg}>{buyError}</p>}
-            {buySuccess && <p className={styles.successMsg}>✅ PURCHASE COMPLETE!</p>}
-
-            {ownedItems.includes(selectedItem.id) ? (
+        {/* ── Collection ───────────────────────── */}
+        <section className={styles.collection} aria-label="All items">
+          <div className={styles.filters} role="tablist" aria-label="Filter items">
+            {FILTERS.map(f => (
               <button
-                id={`equip-btn-${selectedItem.id}`}
-                className="btn btn-primary"
-                onClick={() => { handleEquip(selectedItem); setSelectedItem(null); }}
+                key={f.id}
+                id={`tab-${f.id}`}
+                type="button"
+                role="tab"
+                aria-selected={filter === f.id}
+                className={filter === f.id ? styles.filterOn : ''}
+                onClick={() => setFilter(f.id)}
               >
-                {equippedItems[selectedItem.category] === selectedItem.id ? 'UNEQUIP' : 'EQUIP ITEM'}
+                {f.label}
               </button>
-            ) : (
-              <button
-                id={`buy-btn-${selectedItem.id}`}
-                className="btn btn-gold"
-                onClick={() => handleBuy(selectedItem)}
-              >
-                BUY ITEM
-              </button>
-            )}
-            <button className="btn btn-secondary btn-sm" onClick={() => setSelectedItem(null)}>
-              CLOSE
-            </button>
+            ))}
           </div>
-        </div>
-      )}
-    </div>
+
+          {mounted && filter === 'all' && hiddenCount > 0 && (
+            <p className={styles.lootNote}>
+              <span className={styles.lootGem} aria-hidden="true" />
+              {hiddenCount} legendary {hiddenCount === 1 ? 'item is' : 'items are'} hidden in the mazes
+            </p>
+          )}
+
+          {mounted && filtered.length === 0 ? (
+            <p className={styles.empty}>Nothing here yet. Clear stages to earn coins, then unlock your first item.</p>
+          ) : (
+            <div className={styles.grid}>
+              {mounted && filtered.map(item => {
+                const isOwned = owned(item.id);
+                const on = isEquipped(item);
+                return (
+                  <button
+                    key={item.id}
+                    id={`item-${item.id}`}
+                    type="button"
+                    className={`${styles.card} ${on ? styles.cardOn : ''} ${selectedItem?.id === item.id ? styles.cardSelected : ''}`}
+                    onClick={() => select(item)}
+                    aria-pressed={selectedItem?.id === item.id}
+                  >
+                    <span className={`${styles.rarityBar} ${styles[item.rarity]}`} />
+                    <span className={styles.art}>
+                      <span className={styles.thumb} style={thumbFrame(item)}>
+                        <KnightSprite hero={hero} still facing={thumbFacing(item)} gear={{ [item.category]: item.id }} />
+                      </span>
+                    </span>
+                    <span className={styles.name}>{item.name}</span>
+                    <span className={`${styles.price} ${on ? styles.priceOn : isOwned ? styles.priceOwned : ''}`}>
+                      {on ? 'Equipped' : isOwned ? 'Owned' : priceLabel(item)}
+                    </span>
+                  </button>
+                );
+              })}
+              {mounted && filter === 'all' && hidden.map(item => (
+                <div key={item.id} className={`${styles.card} ${styles.mystery}`} aria-label="Hidden item, found inside the mazes">
+                  <span className={`${styles.rarityBar} ${styles.legendary}`} />
+                  <span className={styles.art}>
+                    <span className={styles.mysteryMark} aria-hidden="true">?</span>
+                  </span>
+                  <span className={styles.name}>Hidden {SLOT_NAMES[item.category]}</span>
+                  <span className={styles.price}>In the mazes</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </WorldShell>
   );
 }

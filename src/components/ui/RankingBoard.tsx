@@ -104,7 +104,8 @@ export default function RankingBoard() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>ORIM LEADERBOARD</h1>
+      <h1 className={styles.title}>Leaderboard</h1>
+      <p className={styles.note}>Sample rankings for the demo · your own times are real and saved on this device</p>
 
       <div className={styles.board}>
         {/* Sidebar for Worlds */}
@@ -117,9 +118,8 @@ export default function RankingBoard() {
                 setActiveWorldId(world.id);
                 setSelectedStage(null);
               }}
-              style={{ borderRightColor: activeWorldId === world.id ? world.color : '' }}
             >
-              <span className={styles.worldEmoji}>{world.emoji}</span>
+              <span className={styles.worldEmoji}>{String(world.id).padStart(2, '0')}</span>
               <span>{world.name}</span>
             </button>
           ))}
@@ -130,8 +130,8 @@ export default function RankingBoard() {
           {selectedStage === null ? (
             <>
               <div className={styles.mainHeader}>
-                <h2 className={styles.mainTitle} style={{ color: activeWorld.color }}>
-                  {activeWorld.name} <span style={{fontSize: '1rem', color: '#9ca3af'}}>Stages {activeWorld.range[0]} - {activeWorld.range[1]}</span>
+                <h2 className={styles.mainTitle}>
+                  {activeWorld.name} <span className={styles.mainRange}>Stages {activeWorld.range[0]}–{activeWorld.range[1]}</span>
                 </h2>
               </div>
               <div className={styles.stageGrid}>
@@ -157,19 +157,19 @@ export default function RankingBoard() {
                   style={{ marginBottom: 0 }}
                   onClick={() => setSelectedStage(null)}
                 >
-                  ◀ BACK TO STAGES
+                  ← All stages
                 </button>
                 <button 
                   className="btn btn-primary btn-sm"
                   onClick={() => router.push(`/game/${selectedStage}`)}
                 >
-                  PLAY STAGE {selectedStage} ▶
+                  Play stage {selectedStage} →
                 </button>
               </div>
               
               <div className={styles.mainHeader}>
-                <h2 className={styles.mainTitle} style={{ color: activeWorld.color }}>
-                  STAGE {selectedStage} LEADERBOARD
+                <h2 className={styles.mainTitle}>
+                  Stage {selectedStage}
                 </h2>
               </div>
 
@@ -177,9 +177,9 @@ export default function RankingBoard() {
                 <table className={styles.rankingTable}>
                   <thead>
                     <tr>
-                      <th className={styles.rank}>RANK</th>
-                      <th>EXPLORER</th>
-                      <th className={styles.timeHeader}>TIME</th>
+                      <th className={styles.rank}>Rank</th>
+                      <th>Explorer</th>
+                      <th className={styles.timeHeader}>Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -189,7 +189,7 @@ export default function RankingBoard() {
                           #{idx + 1}
                         </td>
                         <td className={styles.wallet}>
-                          {entry.wallet} {entry.isMe && '(YOU)'}
+                          {entry.wallet} {entry.isMe && '(you)'}
                         </td>
                         <td className={styles.time}>
                           {formatTime(entry.time)}

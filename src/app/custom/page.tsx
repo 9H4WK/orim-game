@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import WorldShell from '@/components/ui/WorldShell';
 import { 
   PublicKey, 
   SystemProgram, 
@@ -183,84 +183,87 @@ export default function CustomMazeEditor() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const mark = (draw: (cx: number, cy: number) => void, px: number, py: number) => {
+      ctx.fillStyle = '#231a40'; ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
+      draw(px + CELL_SIZE / 2, py + CELL_SIZE / 2);
+    };
+
     grid.forEach((row, y) => {
       row.forEach((type, x) => {
         const px = x * CELL_SIZE; const py = y * CELL_SIZE;
-        
+
         // Base canvas color
-        ctx.fillStyle = '#05040a'; 
+        ctx.fillStyle = '#110b22';
         ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
 
         if (type === 'floor') {
-          // Path - Paved look
-          ctx.fillStyle = '#1e1548'; // Brighter than background
-          ctx.fillRect(px + 1, py + 1, CELL_SIZE - 2, CELL_SIZE - 2);
-          
-          // Pattern
-          ctx.fillStyle = 'rgba(167,139,250,0.1)';
-          ctx.fillRect(px + 4, py + 4, 2, 2);
-          ctx.fillRect(px + CELL_SIZE - 6, py + CELL_SIZE - 6, 2, 2);
-        } else if (type === 'wall') {
-          // Solid Wall
-          ctx.fillStyle = '#3b1f6e'; 
+          // Open path: dusk checker
+          ctx.fillStyle = (x + y) % 2 === 0 ? '#1c1434' : '#231a40';
           ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
-          
-          // Bevel / 3D look
-          ctx.strokeStyle = '#5b21b6'; 
-          ctx.strokeRect(px + 1, py + 1, CELL_SIZE - 2, CELL_SIZE - 2);
-          
-          ctx.fillStyle = 'rgba(255,255,255,0.03)';
-          ctx.fillRect(px + 2, py + 2, CELL_SIZE - 4, 4);
+        } else if (type === 'wall') {
+          // Cream stone block with a plum base, like the in-game walls
+          ctx.fillStyle = '#3b2868';
+          ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
+          ctx.fillStyle = '#f6eedb';
+          ctx.fillRect(px + 1, py + 1, CELL_SIZE - 2, CELL_SIZE - 8);
+          ctx.fillStyle = '#c4b691';
+          ctx.fillRect(px + 1, py + CELL_SIZE - 9, CELL_SIZE - 2, 3);
         } else if (type === 'start') {
-          // Drawing start over potential wall
-          ctx.fillStyle = '#1e1548'; ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
-          ctx.font = '24px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('🏃', px+CELL_SIZE/2, py+CELL_SIZE/2);
+          mark((cx, cy) => {
+            ctx.strokeStyle = '#f6eedb'; ctx.lineWidth = 3;
+            ctx.strokeRect(cx - 9, cy - 9, 18, 18);
+            ctx.fillStyle = '#f6eedb'; ctx.fillRect(cx - 3, cy - 3, 6, 6);
+          }, px, py);
         } else if (type === 'end') {
-          ctx.fillStyle = '#1e1548'; ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
-          ctx.font = '24px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('🌀', px+CELL_SIZE/2, py+CELL_SIZE/2);
+          mark((cx, cy) => {
+            ctx.fillStyle = 'rgba(212,255,58,0.25)'; ctx.fillRect(px + 2, py + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+            ctx.strokeStyle = '#d4ff3a'; ctx.lineWidth = 3;
+            ctx.strokeRect(cx - 10, cy - 10, 20, 20);
+            ctx.fillStyle = '#d4ff3a'; ctx.fillRect(cx - 4, cy - 4, 8, 8);
+          }, px, py);
         } else if (type === 'chest') {
-          ctx.fillStyle = '#1e1548'; ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
-          ctx.font = '24px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('🎁', px+CELL_SIZE/2, py+CELL_SIZE/2);
+          mark((cx, cy) => {
+            ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 4);
+            ctx.fillStyle = '#d4ff3a'; ctx.fillRect(-7, -7, 14, 14);
+            ctx.restore();
+          }, px, py);
         }
-        
-        ctx.strokeStyle = 'rgba(124,58,237,0.1)'; 
+
+        ctx.strokeStyle = 'rgba(246,238,219,0.06)';
         ctx.strokeRect(px, py, CELL_SIZE, CELL_SIZE);
       });
     });
   }, [grid, isSimulating]);
 
-  useEffect(() => { render(); }, [render]);
+  useEffect(() => { if (mounted) render(); }, [render, mounted]);
 
-  const handleInteraction = (e: any) => {
+  /** Paint one cell under a pointer; the canvas may be drawn smaller than its pixel size on phones */
+  const paintAt = (clientX: number, clientY: number, tool: Tool) => {
     if (isSimulating) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX || e.touches?.[0].clientX;
-    const cy = e.clientY || e.touches?.[0].clientY;
-    const x = Math.floor((cx - rect.left) / CELL_SIZE);
-    const y = Math.floor((cy - rect.top) / CELL_SIZE);
-
-    if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
-      const newGrid = [...grid];
-      if (['start', 'end'].includes(activeTool)) {
-        for(let r=0; r<GRID_SIZE; r++) { for(let c=0; c<GRID_SIZE; c++) {
-          if (newGrid[r][c] === activeTool) newGrid[r][c] = 'floor';
-        }}
+    const scale = canvas.width / rect.width;
+    const x = Math.floor(((clientX - rect.left) * scale) / CELL_SIZE);
+    const y = Math.floor(((clientY - rect.top) * scale) / CELL_SIZE);
+    if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return;
+    setGrid(prev => {
+      if (prev[y][x] === tool) return prev;
+      const next = prev.map(row => [...row]);
+      if (tool === 'start' || tool === 'end') {
+        for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) if (next[r][c] === tool) next[r][c] = 'floor';
       }
-      newGrid[y][x] = activeTool;
-      setGrid(newGrid);
-    }
+      next[y][x] = tool;
+      return next;
+    });
   };
+
 
   const handleMint = async () => {
     if (!connected || !publicKey) { setError("Connect your wallet first!"); return; }
     const hasStart = grid.some(row => row.includes('start'));
     const hasEnd = grid.some(row => row.includes('end'));
-    if (!hasStart || !hasEnd) { setError("Maze needs a Start (🏃) and a Portal (🌀)!"); return; }
+    if (!hasStart || !hasEnd) { setError("Your maze needs a start and an exit."); return; }
 
     setError(null); setIsMinting(true); setMintStatus('paying');
     try {
@@ -280,31 +283,31 @@ export default function CustomMazeEditor() {
   if (!mounted) return null;
 
   return (
-    <div className={`${styles.page} scanlines`}>
+    <WorldShell active="create">
+    <div className={styles.page}>
       <header className={styles.header}>
-        <button className="btn btn-secondary btn-sm" onClick={() => router.push('/')}>🏰 HOME</button>
-        <h1 className={styles.title}>ORIM ARCHITECT</h1>
-        <WalletMultiButton />
+        <span className={styles.headTag}>▶ Create · draw by hand</span>
+        <h1 className={styles.title}>Maze editor</h1>
       </header>
 
       <main className={styles.main}>
         <section className={styles.toolbar}>
-          <p className={styles.toolTitle}>BUILDING TOOLS</p>
+          <p className={styles.toolTitle}>Building tools</p>
           <div className={styles.toolGrid}>
-            {(['floor', 'start', 'end', 'chest'] as Tool[]).map(t => (
+            {(['floor', 'wall', 'start', 'end', 'chest'] as Tool[]).map(t => (
               <button key={t} className={`${styles.toolBtn} ${activeTool === t ? styles.toolActive : ''}`} onClick={() => setActiveTool(t)}>
-                <span className={styles.toolIcon}>{t === 'floor' ? '🧹' : t === 'start' ? '🏃' : t === 'end' ? '🌀' : '🎁'}</span>
-                {t === 'floor' ? 'PATH' : t.toUpperCase()}
+                <span className={`${styles.toolIcon} ${styles[`tool_${t}`]}`} aria-hidden="true" />
+                {t === 'floor' ? 'Path' : t === 'wall' ? 'Wall' : t === 'start' ? 'Start' : t === 'end' ? 'Exit' : 'Item'}
               </button>
             ))}
           </div>
           
           <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button className="btn btn-primary btn-sm" onClick={startSimulation} disabled={isSimulating}>
-              🎮 TEST RUN
+              Test run
             </button>
             <button className="btn btn-secondary btn-xs" onClick={() => setGrid(Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('wall')))}>
-              🗑️ CLEAR ALL
+              Clear all
             </button>
           </div>
         </section>
@@ -313,7 +316,7 @@ export default function CustomMazeEditor() {
           {isSimulating && simMaze ? (
             <div className={styles.simContainer}>
               <button className={`${styles.toolBtn} ${styles.stopBtn} ${styles.topStopBtn}`} onClick={() => setIsSimulating(false)}>
-                🛑 STOP TEST
+                Stop test
               </button>
               
               <div className={styles.simMazeWrap}>
@@ -327,81 +330,62 @@ export default function CustomMazeEditor() {
               )}
               
               {simPhase !== 'choosing' && (
-                <p className={styles.hint}>Characters move automatically. Choose paths at junctions!</p>
+                <p className={styles.hint}>Your hero runs on its own. Choose a path at each junction.</p>
               )}
             </div>
           ) : (
             <>
               <canvas ref={canvasRef} width={GRID_SIZE * CELL_SIZE} height={GRID_SIZE * CELL_SIZE} className={styles.editorCanvas}
+                style={{ touchAction: 'none' }}
                 onContextMenu={(e) => e.preventDefault()}
-                onMouseDown={(e) => { 
-                  isDrawing.current = true; 
-                  if (e.button === 2) { // Right click -> Restore Wall
-                    const rect = canvasRef.current!.getBoundingClientRect();
-                    const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
-                    const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
-                    if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
-                      const newGrid = [...grid];
-                      newGrid[y][x] = 'wall';
-                      setGrid(newGrid);
-                    }
-                  } else {
-                    handleInteraction(e); 
-                  }
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  isDrawing.current = true;
+                  paintAt(e.clientX, e.clientY, e.button === 2 ? 'wall' : activeTool);
                 }}
-                onMouseMove={(e) => { 
-                  if(isDrawing.current) {
-                    if (e.buttons === 2) { // Right click drag -> Restore Walls
-                      const rect = canvasRef.current!.getBoundingClientRect();
-                      const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
-                      const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
-                      if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
-                        const newGrid = [...grid];
-                        newGrid[y][x] = 'wall';
-                        setGrid(newGrid);
-                      }
-                    } else {
-                      handleInteraction(e);
-                    }
-                  }
+                onPointerMove={(e) => {
+                  if (!isDrawing.current) return;
+                  const tool = e.buttons & 2 ? 'wall' : activeTool;
+                  // Only paths and walls paint while dragging; markers are placed with a tap
+                  if (tool === 'floor' || tool === 'wall') paintAt(e.clientX, e.clientY, tool);
                 }}
-                onMouseUp={() => { isDrawing.current = false; }}
-                onMouseLeave={() => { isDrawing.current = false; }}
+                onPointerUp={() => { isDrawing.current = false; }}
+                onPointerCancel={() => { isDrawing.current = false; }}
               />
-              <p className={styles.hint}>Left-click to Carve Path. Right-click to Restore Wall.</p>
+              <p className={styles.hint}>Tap or drag to carve paths. Pick Wall to fill one back in.</p>
             </>
           )}
 
           {/* ── Architect's Handbook ── */}
           <div className={styles.guide}>
-            <p className={styles.toolTitle}>ARCHITECT&apos;S HANDBOOK</p>
+            <p className={styles.toolTitle}>Architect&apos;s handbook</p>
             <div className={styles.guideGrid}>
               <div className={styles.guideStep}>
                 <span className={styles.stepNum}>1</span>
                 <div>
-                  <p className={styles.stepLabel}>🧹 CARVE PATHS</p>
-                  <p className={styles.stepDesc}>Left-click to drill through the solid rock.</p>
+                  <p className={styles.stepLabel}>Carve paths</p>
+                  <p className={styles.stepDesc}>Tap or drag through solid rock.</p>
                 </div>
               </div>
               <div className={styles.guideStep}>
                 <span className={styles.stepNum}>2</span>
                 <div>
-                  <p className={styles.stepLabel}>🧱 FIX MISTAKES</p>
-                  <p className={styles.stepDesc}>Use Right-click to restore walls instantly.</p>
+                  <p className={styles.stepLabel}>Fix mistakes</p>
+                  <p className={styles.stepDesc}>Pick Wall and tap to fill a path back in. Right-click works too.</p>
                 </div>
               </div>
               <div className={styles.guideStep}>
                 <span className={styles.stepNum}>3</span>
                 <div>
-                  <p className={styles.stepLabel}>🏃 HERO ENTRY</p>
-                  <p className={styles.stepDesc}>Place the Runner at the starting line.</p>
+                  <p className={styles.stepLabel}>Hero entry</p>
+                  <p className={styles.stepDesc}>Place the start where your hero enters.</p>
                 </div>
               </div>
               <div className={styles.guideStep}>
                 <span className={styles.stepNum}>4</span>
                 <div>
-                  <p className={styles.stepLabel}>🌀 PORTAL EXIT</p>
-                  <p className={styles.stepDesc}>Every dungeon needs a Waypoint to victory.</p>
+                  <p className={styles.stepLabel}>Portal exit</p>
+                  <p className={styles.stepDesc}>Every dungeon needs a way out.</p>
                 </div>
               </div>
             </div>
@@ -410,12 +394,12 @@ export default function CustomMazeEditor() {
 
         <aside className={styles.sidebar}>
           <div className={styles.infoBox}>
-            <h3 className={styles.infoTitle}>MINT DUNGEON NFT</h3>
+            <h3 className={styles.infoTitle}>Mint dungeon NFT</h3>
             <p className={styles.infoText}>Record your creation on-chain. Players pay <strong>0.1 SOL</strong> to explore your level!</p>
-            <div className={styles.priceTag}><span className={styles.toolTitle}>MINT FEE</span><span className={styles.price}>0.1 SOL</span></div>
-            {error && <p style={{ color: '#ef4444', fontSize: '9px', marginTop: '10px' }}>⚠️ {error}</p>}
+            <div className={styles.priceTag}><span className={styles.toolTitle}>Mint fee</span><span className={styles.price}>0.1 SOL</span></div>
+            {error && <p style={{ color: '#ff9a8a', fontSize: '13px', marginTop: '10px' }}>{error}</p>}
             <button className="btn btn-gold btn-lg btn-block" style={{ marginTop: '20px' }} onClick={handleMint} disabled={isMinting || isSimulating}>
-              {isMinting ? 'PROCESSING...' : '💎 CREATE NFT MAP'}
+              {isMinting ? 'Processing…' : 'Create NFT map'}
             </button>
           </div>
         </aside>
@@ -425,18 +409,18 @@ export default function CustomMazeEditor() {
       {simSuccess && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <div className={styles.successIcon}>🏆</div>
-            <h2 className={styles.modalTitle}>DUNGEON VERIFIED!</h2>
+            <div className={styles.successIcon} aria-hidden="true" />
+            <h2 className={styles.modalTitle}>Dungeon verified</h2>
             <p className={styles.modalDesc}>
               Congratulations! Your maze is traversable and ready for the world. 
               Mint it now to share it with players across the Solana network!
             </p>
             <div className={styles.modalButtons}>
               <button className="btn btn-secondary btn-sm" onClick={() => { setSimSuccess(false); setIsSimulating(false); }}>
-                🛠️ EDIT MORE
+                Edit more
               </button>
               <button className="btn btn-gold btn-sm" onClick={() => { setSimSuccess(false); setIsSimulating(false); handleMint(); }}>
-                💎 MINT NFT
+                Mint NFT
               </button>
             </div>
           </div>
@@ -447,11 +431,12 @@ export default function CustomMazeEditor() {
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.loadingCircle} />
-            <h2 className={styles.modalTitle}>{mintStatus === 'paying' ? 'CONFIRMING PAYMENT...' : mintStatus === 'minting' ? 'MINTING NFT...' : 'DUNGEON READY!'}</h2>
-            <p className={styles.modalDesc}>{mintStatus === 'paying' ? 'Verify in wallet.' : mintStatus === 'minting' ? 'Saving structure...' : 'Redirecting...'}</p>
+            <h2 className={styles.modalTitle}>{mintStatus === 'paying' ? 'Confirming payment…' : mintStatus === 'minting' ? 'Minting NFT…' : 'Dungeon ready'}</h2>
+            <p className={styles.modalDesc}>{mintStatus === 'paying' ? 'Verify in wallet.' : mintStatus === 'minting' ? 'Saving structure…' : 'Redirecting…'}</p>
           </div>
         </div>
       )}
     </div>
+    </WorldShell>
   );
 }

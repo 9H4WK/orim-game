@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './ClearScreen.module.css';
 import { getItemById } from '@/lib/shop/items';
+import { usePlayerStore } from '@/lib/store/playerStore';
 
-const Trophy3D = dynamic(() => import('./Trophy3D'), { ssr: false });
+const KnightSprite = dynamic(() => import('../character/KnightSprite'), { ssr: false });
 
 interface ClearScreenProps {
   stage: number;
@@ -46,6 +47,8 @@ export default function ClearScreen({
   foundEasterEggs = [],
 }: ClearScreenProps) {
   const { connection } = useConnection();
+  const equippedItems = usePlayerStore((st) => st.equippedItems);
+  const hero = usePlayerStore((st) => st.hero);
   const wallet = useAnchorWallet();
   const [visibleStars, setVisibleStars] = useState(0);
   const [showContent, setShowContent] = useState(false);
@@ -54,15 +57,15 @@ export default function ClearScreen({
   const confettiRef = useRef(false);
 
   const syncResult = useCallback(async () => {
-    setStatusText('TRANSMITTING TO SOLANA LEDGER...');
+    setStatusText('Recording on Solana…');
     try {
       const service = new OrimBlockchainService(connection, wallet!);
       const sig = await service.recordStageClear(stage, stars);
       setTxId(sig);
-      setStatusText('SYNC COMPLETE: STARDUST SECURED');
+      setStatusText('Recorded on-chain');
     } catch (e: any) {
       console.error('Sync error:', e);
-      setStatusText('SYNC FAILED: RETRY IN VAULT');
+      setStatusText('Sync failed · your result is saved on this device');
     }
   }, [connection, wallet, stage, stars]);
 
@@ -77,7 +80,7 @@ export default function ClearScreen({
       if (wallet) {
         syncResult();
       } else {
-        setStatusText('OFFLINE: CONNECT WALLET TO RECORD');
+        setStatusText('Saved on this device · connect a wallet to record on-chain');
       }
     }, 1900);
 
@@ -86,7 +89,7 @@ export default function ClearScreen({
       import('canvas-confetti').then((mod) => {
         const confetti = mod.default;
         const end = Date.now() + 1500;
-        const colors = ['#fbbf24', '#d97706', '#7c3aed', '#fff'];
+        const colors = ['#d4ff3a', '#f6eedb', '#8fb300', '#c9b8ff'];
         (function fire() {
           confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 }, colors });
           confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 }, colors });
@@ -96,22 +99,32 @@ export default function ClearScreen({
     }
   }, [stars, wallet, syncResult]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') onRetry();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onRetry]);
+
+  const headline = stars === 3 ? 'Flawless!' : stars === 2 ? 'Cleared!' : 'Escaped!';
+  const nextLabel = isInfiniteMode ? 'Keep going' : stage >= 100 ? 'Infinite mode' : `Stage ${stage + 1}`;
+
   return (
-    <div className={`${styles.overlay} scanlines`}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${headline} ${isInfiniteMode ? 'Infinite maze' : `Stage ${stage}`}`}>
       <div className={styles.card}>
-        <div className={styles.stageBadge}>
-          {isInfiniteMode 
-            ? `INFINITE MAZE #${infiniteStageCount + 1} COMPLETE!` 
-            : `STAGE ${stage} COMPLETE!`}
-        </div>
+        <span className={styles.tag}>
+          ▶ {isInfiniteMode ? `Infinite maze #${infiniteStageCount + 1}` : `Stage ${stage}`}
+        </span>
+        <h2 className={styles.stageBadge}>{headline}</h2>
 
-        {/* Feature: Centered High-Quality Trophy */}
         <div className={styles.trophyWrap}>
-          <Trophy3D size={260} autoRotate />
+          <KnightSprite fps={7} gear={equippedItems} hero={hero} />
           <div className={styles.trophyGlow} />
+          <div className={styles.rock} />
         </div>
 
-        <div className={styles.stars}>
+        <div className={styles.stars} aria-label={`${stars} of 3 stars`}>
           {[1, 2, 3].map((n) => (
             <span key={n} className={`${styles.star} ${n <= visibleStars ? styles.starVisible : ''}`}>★</span>
           ))}
@@ -120,68 +133,64 @@ export default function ClearScreen({
         {showContent && (
           <div className={`${styles.stats} anim-slideup`}>
             <div className={styles.statRow}>
-              <span className={styles.statLabel}>⏱ TIME</span>
+              <span className={styles.statLabel}>Time</span>
               <span className={styles.statValue}>{formatTime(clearTime)}</span>
             </div>
             <div className={styles.statRow}>
-              <span className={styles.statLabel}>💢 MISTAKES</span>
+              <span className={styles.statLabel}>Wrong turns</span>
               <span className={`${styles.statValue} ${mistakes > 0 ? styles.statDanger : styles.statSuccess}`}>
                 {mistakes}
               </span>
             </div>
-            
-            {/* Items Found Section */}
-            {foundEasterEggs.length > 0 && (
-              <div className={styles.itemsFound}>
-                <p className={styles.itemsFoundTitle}>🎁 LEGENDARY ITEMS FOUND</p>
-                <div className={styles.itemsList}>
-                  {foundEasterEggs.map(id => {
-                    const item = getItemById(id);
-                    return (
-                      <div key={id} className={styles.foundItem}>
-                        <div className={styles.itemEmoji}>
-                          {item?.pixelMatrix ? (
-                            <PixelIcon matrix={item.pixelMatrix} size={32} glow={item.rarity === 'legendary'} />
-                          ) : (
-                            <span>{item?.emoji || '❔'}</span>
-                          )}
-                        </div>
-                        <span className={styles.itemName}>{item?.name || 'Unknown Item'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <div className={styles.statRow}>
+              <span className={styles.statLabel}>Coins</span>
+              <span className={`${styles.statValue} ${styles.statSuccess}`}>+{stars * 10}</span>
+            </div>
+          </div>
+        )}
 
-            {/* On-Chain Status Info */}
-            <div className={styles.onChainStatus}>
-              <div className={styles.onlineDot} />
-              <span className={styles.syncText}>
-                {statusText || 'READY TO SYNC STARDUST...'}
-              </span>
-              {txId && !txId.startsWith('sandbox') && (
-                <a 
-                  href={`https://explorer.solana.com/tx/${txId}?cluster=devnet`} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className={styles.txLink}
-                >
-                  VIEW TX ↗
-                </a>
-              )}
+        {showContent && foundEasterEggs.length > 0 && (
+          <div className={styles.itemsFound}>
+            <p className={styles.itemsFoundTitle}>Legendary item found</p>
+            <div className={styles.itemsList}>
+              {foundEasterEggs.map(id => {
+                const item = getItemById(id);
+                return (
+                  <div key={id} className={styles.foundItem}>
+                    <div className={styles.itemEmoji}>
+                      {item?.pixelMatrix && <PixelIcon matrix={item.pixelMatrix} size={32} />}
+                    </div>
+                    <span className={styles.itemName}>{item?.name || 'Unknown item'}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
         {showContent && (
           <div className={`${styles.buttons} anim-slideup`}>
-            <button id="clear-next-btn" className="btn btn-gold btn-lg" onClick={onNext}>
-              {isInfiniteMode ? 'CONTINUE EXPLORING ▶' : stage >= 100 ? 'ENTER INFINITE MODE' : 'NEXT STAGE ▶'}
+            <button id="clear-next-btn" className={styles.next} onClick={onNext} autoFocus>
+              {nextLabel} <b aria-hidden="true" />
             </button>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
-              <button id="clear-retry-btn" className="btn btn-secondary btn-sm" onClick={onRetry}>🔄 RETRY</button>
-              <button id="clear-menu-btn" className="btn btn-secondary btn-sm" onClick={onMenu}>🏰 STAGES</button>
+            <div className={styles.secondary}>
+              <button id="clear-retry-btn" onClick={onRetry}>Retry <kbd>R</kbd></button>
+              <span aria-hidden="true">·</span>
+              <button id="clear-menu-btn" onClick={onMenu}>Worlds</button>
+            </div>
+            <div className={styles.onChainStatus}>
+              <div className={styles.onlineDot} />
+              <span className={styles.syncText}>{statusText || 'Ready to sync'}</span>
+              {txId && !txId.startsWith('sandbox') && (
+                <a
+                  href={`https://explorer.solana.com/tx/${txId}?cluster=devnet`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.txLink}
+                >
+                  View tx ↗
+                </a>
+              )}
             </div>
           </div>
         )}

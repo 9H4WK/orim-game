@@ -303,3 +303,147 @@
 .modalButtons button {
   flex: 1;
 }
+
+/* ── Dusk theme ─────────────────────────────────────────────── */
+.page {
+  background:
+    linear-gradient(180deg, rgba(22, 15, 43, 0.4) 0%, var(--color-bg) 420px),
+    url('/bg_far_mountains.png') center top / 100% auto no-repeat,
+    var(--color-bg);
+  image-rendering: pixelated;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  padding: 12px clamp(16px, 3vw, 40px);
+  background: rgba(22, 15, 43, 0.72);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.6vw, 32px);
+  color: var(--color-cream);
+  text-shadow: 0 3px 0 var(--color-plum);
+}
+
+.toolTitle {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--color-lime);
+}
+
+.toolBtn {
+  gap: 12px;
+  font-size: 14px;
+}
+
+.toolActive {
+  background: var(--color-lime) !important;
+  border-color: var(--color-lime) !important;
+  color: var(--color-bg) !important;
+  box-shadow: 0 4px 0 var(--color-lime-deep) !important;
+}
+
+.toolIcon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 0;
+  border-radius: 4px;
+}
+
+.tool_floor { background: #231a40; border: 1px solid rgba(246, 238, 219, 0.3); }
+.tool_wall { background: var(--color-cream); box-shadow: inset 0 -4px 0 #c4b691; }
+.tool_start { border: 3px solid var(--color-cream); }
+.tool_end { background: var(--color-lime); box-shadow: inset 0 0 0 4px #1f2a06; }
+.tool_chest { width: 12px; height: 12px; margin: 0 2px; background: var(--color-lime); transform: rotate(45deg); border-radius: 2px; }
+.toolActive .tool_chest,
+.toolActive .tool_end { background: var(--color-bg); box-shadow: none; }
+.toolActive .tool_start { border-color: var(--color-bg); }
+
+.canvasWrap {
+  background: rgba(14, 9, 28, 0.6);
+}
+
+.editorCanvas {
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 6px 0 #0a0616;
+  max-width: 100%;
+  height: auto;
+}
+
+.hint {
+  font-style: normal;
+}
+
+.successIcon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 8px;
+  background: var(--color-lime);
+  transform: rotate(45deg);
+  border-radius: 6px;
+  box-shadow: 0 0 24px rgba(212, 255, 58, 0.6);
+}
+
+/* ── Inside the world shell ─────────────────────────────────── */
+.page {
+  min-height: 0;
+  background: none;
+}
+
+.header {
+  position: static;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(8px, 2vh, 20px) 16px 0;
+  background: none;
+  border: 0;
+  backdrop-filter: none;
+}
+
+.headTag {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  color: var(--color-lime);
+}
+
+.title {
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 0.9;
+  text-shadow:
+    0 0.02em 0 #d6caa9,
+    0 0.04em 0 #c4b691,
+    0 0.06em 0 #3b2868,
+    0 0.08em 0 #2b1c4f,
+    0 0.2em 0.35em rgba(10, 6, 22, 0.6);
+}
+
+.main { padding-top: 24px; }
+
+.toolbar,
+.canvasWrap,
+.infoBox,
+.guide {
+  background: rgba(22, 15, 43, 0.66) !important;
+  border: 1px solid var(--color-line) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 6px 0 rgba(10, 6, 22, 0.55) !important;
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 1100px) {
+  .main { flex-direction: column; align-items: center; padding: 20px 16px; gap: 20px; }
+  .toolbar, .sidebar { width: 100%; max-width: 620px; }
+  .toolGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+}
+
+/* Phones: five tools in one row, icon over label, 48px targets */
+@media (max-width: 599px) {
+  .toolBtn { flex-direction: column; justify-content: center; gap: 4px; min-height: 56px; padding: 8px 4px; font-size: 12px; }
+}

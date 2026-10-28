@@ -1,68 +1,84 @@
 /* ============================================================
-   ORIM — Global Design System v3
-   Crusaders Quest Inspired Epic Fantasy Theme
+   ORIM — Global Design System v4
+   Dusk: pixel mountains, cream stone, lime light
    ============================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Pixelify+Sans:wght@400;700&family=VT323&display=swap');
-
-/* ── Wallet Adapter Overrides ──────────────────────────────── */
-.wallet-adapter-button {
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important;
-  font-family: var(--font-pixel) !important;
-  font-size: 8px !important; /* Pixel fonts need smaller size for precision */
-  padding: 12px 24px !important;
-  border-radius: 0 !important;
-  border: 1px solid #6366f1 !important;
-  box-shadow: 
-    0 0 10px rgba(99, 102, 241, 0.3),
-    inset 0 0 8px rgba(99, 102, 241, 0.2) !important;
-  transition: all 0.2s cubic-bezier(.17,.67,.44,1.27) !important;
-  color: #fff !important;
-  text-transform: uppercase;
-}
-.wallet-adapter-button:hover {
-  background: linear-gradient(135deg, #312e81 0%, #4338ca 100%) !important;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5) !important;
-}
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
-  /* Epic Palette */
-  --color-bg:           #07040e;
-  --color-bg-deep:      #0c081a;
-  --color-surface:      rgba(15, 10, 31, 0.85); /* Glass surface */
-  --color-surface-hover:rgba(25, 20, 50, 0.95);
-  
-  /* Primary — Mystical Violet */
-  --color-primary:       #8b5cf6;
-  --color-primary-light: #c4b5fd;
-  --color-primary-dark:  #4c1d95;
-  --color-primary-glow:  rgba(139, 92, 246, 0.4);
+  /* Dusk palette — night sky, cream stone, lime light */
+  --color-bg:           #160f2b;
+  --color-bg-deep:      #110b22;
+  --color-surface:      rgba(30, 20, 58, 0.72);
+  --color-surface-hover:rgba(43, 28, 79, 0.9);
+  --color-cream:        #f6eedb;
+  --color-lime:         #d4ff3a;
+  --color-lime-deep:    #8fb300;
+  --color-plum:         #2b1c4f;
+  --color-line:         rgba(246, 238, 219, 0.14);
 
-  /* Accents */
-  --color-gold:          #fde68a;
-  --color-gold-deep:     #fbbf24;
-  --color-gold-glow:     rgba(251, 191, 36, 0.3);
-  --color-item-legendary:#fcd34d;
-  --color-item-epic:     #c084fc;
-  --color-item-rare:     #34d399;
-  
-  /* Text */
-  --color-text:          #e0e7ff;
-  --color-text-dim:      #94a3b8;
-  --color-text-gold:     #fcd34d;
+  /* Legacy names, mapped onto the dusk palette */
+  --color-primary:       #d4ff3a;
+  --color-primary-light: #e6ff8a;
+  --color-primary-dark:  #2b1c4f;
+  --color-primary-glow:  rgba(212, 255, 58, 0.25);
+  --color-gold:          #f6eedb;
+  --color-gold-deep:     #d4ff3a;
+  --color-gold-glow:     rgba(212, 255, 58, 0.25);
+  --color-item-legendary:#d4ff3a;
+  --color-item-epic:     #c9b8ff;
+  --color-item-rare:     #8fd8ff;
 
-  /* Fonts */
-  --font-pixel:         var(--font-pixel-override, 'Press Start 2P'), cursive;
-  --font-legendary:      var(--font-pixel);
+  --color-text:          #f6eedb;
+  --color-text-dim:      rgba(246, 238, 219, 0.66);
+  --color-text-gold:     #d4ff3a;
+
+  /* Fonts (loaded in layout.tsx) */
+  --font-pixel:          var(--font-silkscreen), 'Silkscreen', monospace;
+  --font-display:        var(--font-bowlby), 'Bowlby One', Impact, sans-serif;
+  --font-legendary:      var(--font-display);
   --font-ui:             var(--font-pixel);
-  --font-mono:           'VT323', monospace;
-  --font-body:           'Outfit', sans-serif;
+  --font-mono:           var(--font-silkscreen), monospace;
+  --font-body:           var(--font-inter-tight), 'Inter Tight', system-ui, sans-serif;
 
-  /* HUD Box */
-  --panel-border:        1px solid rgba(139, 92, 246, 0.4);
-  --panel-shadow:        0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(139, 92, 246, 0.1);
+  --panel-border:        1px solid rgba(246, 238, 219, 0.14);
+  --panel-shadow:        0 4px 0 rgba(10, 6, 22, 0.5), 0 18px 40px rgba(10, 6, 22, 0.45);
 }
+
+/* ── Wallet Adapter ────────────────────────────────────────── */
+.wallet-adapter-button {
+  height: auto !important;
+  padding: 11px 18px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  background: var(--color-cream) !important;
+  color: var(--color-bg) !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
+  transition: transform .2s !important;
+}
+.wallet-adapter-button:not([disabled]):hover {
+  background: var(--color-cream) !important;
+  transform: translateY(-2px);
+}
+.wallet-adapter-button-start-icon { width: 18px !important; height: 18px !important; margin-right: 8px !important; }
+.wallet-adapter-modal-wrapper {
+  background: #1d1438 !important;
+  border: 1px solid var(--color-line);
+  border-radius: 18px !important;
+  font-family: var(--font-body) !important;
+}
+.wallet-adapter-modal-title { font-family: var(--font-display) !important; font-weight: 400 !important; }
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: transparent !important;
+  color: var(--color-cream) !important;
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+}
+.wallet-adapter-modal-list .wallet-adapter-button:hover { background: rgba(246, 238, 219, 0.08) !important; transform: none; }
+.wallet-adapter-dropdown-list { background: #1d1438 !important; border-radius: 14px !important; font-family: var(--font-body) !important; }
 
 /* ── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after {
@@ -77,124 +93,113 @@ body {
   color: var(--color-text);
   min-height: 100vh;
   overflow-x: hidden;
-  image-rendering: pixelated;
-  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Typography ────────────────────────────────────────────── */
-h1 { font-family: var(--font-pixel); font-weight: 400; letter-spacing: 2px; font-size: 2.5rem; }
-h2, h3 { font-family: var(--font-pixel); font-weight: 400; }
-.text-gold { color: var(--color-gold-deep); text-shadow: 0 0 8px var(--color-gold-glow); }
+a { color: inherit; }
 
-/* ── PIXEL BUTTON SYSTEM (Direct Developed) ─────────────────── */
+::selection { background: var(--color-lime); color: var(--color-bg); }
+
+:focus-visible { outline: 2px solid var(--color-lime); outline-offset: 3px; }
+
+/* ── Typography ────────────────────────────────────────────── */
+h1 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; font-size: 2.5rem; line-height: 1; }
+h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; }
+.text-gold { color: var(--color-lime); }
+
+/* ── Buttons ───────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 24px;
-  background: #1f2937;
-  border: 4px solid #111827;
-  color: #fff;
-  font-family: var(--font-pixel);
-  font-size: 10px; /* Bumping size for 'Press Start 2P' */
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  gap: 10px;
+  padding: 13px 22px;
+  background: rgba(246, 238, 219, 0.08);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   cursor: pointer;
-  transition: all 0.1s steps(2);
   position: relative;
-  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  box-shadow: 0 4px 0 rgba(10, 6, 22, 0.55);
+  transition: transform .12s, box-shadow .12s, background .2s;
 }
 
-.btn::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border: 2px solid rgba(255,255,255,0.1);
-  pointer-events: none;
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 rgba(10, 6, 22, 0.55);
+  background: rgba(246, 238, 219, 0.14);
 }
 
-.btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 rgba(0,0,0,0.6);
-  background: #374151;
+.btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(10, 6, 22, 0.55);
 }
 
-.btn:active { 
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 transparent;
-}
+.btn:disabled { opacity: .45; cursor: not-allowed; }
 
-.btn-primary {
-  background: #4c1d95;
-  border-color: #1e1b4b;
-}
-.btn-primary:hover {
-  background: #6d28d9;
-}
-
+.btn-primary,
 .btn-gold {
-  background: #b45309;
-  border-color: #451a03;
-  color: #fef3c7;
+  background: var(--color-lime);
+  border-color: var(--color-lime);
+  color: var(--color-bg);
+  box-shadow: 0 4px 0 var(--color-lime-deep);
 }
-.btn-gold:hover {
-  background: #d97706;
+.btn-primary:hover:not(:disabled),
+.btn-gold:hover:not(:disabled) {
+  background: #ddff60;
+  box-shadow: 0 6px 0 var(--color-lime-deep);
 }
+.btn-primary:active:not(:disabled),
+.btn-gold:active:not(:disabled) { box-shadow: 0 1px 0 var(--color-lime-deep); }
 
 .btn-secondary {
-  background: #334155;
-  border-color: #0f172a;
-}
-.btn-secondary:hover {
-  background: #475569;
+  background: rgba(246, 238, 219, 0.08);
 }
 
-/* ── TACTILE PIXEL PANELS ───────────────────────────────────── */
+.btn-lg { padding: 16px 28px; font-size: 16px; border-radius: 16px; }
+.btn-sm { padding: 10px 16px; font-size: 13px; border-radius: 12px; }
+.btn-xs { padding: 7px 12px; font-size: 12px; border-radius: 10px; }
+.btn-block { width: 100%; }
+
+/* ── Panels ────────────────────────────────────────────────── */
 .px-panel {
-  background: #0f0a1f;
-  border: 4px solid #1a1033;
-  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(10px);
   position: relative;
 }
 
-.px-panel::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border: 4px solid rgba(139, 92, 246, 0.1);
-  pointer-events: none;
-}
-
-.px-panel-gold {
-  border-color: #ca8a04;
-}
-.px-panel-gold::after {
-  border-color: rgba(251, 191, 36, 0.1);
-}
+.px-panel-gold { border-color: rgba(212, 255, 58, 0.45); }
 
 /* ── HUD / BARS ────────────────────────────────────────────── */
 .px-hud-box {
-  background: rgba(13, 10, 26, 0.9);
-  border: 1px solid rgba(139, 92, 246, 0.6);
-  padding: 8px 16px;
+  background: rgba(22, 15, 43, 0.85);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 8px 14px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
 
 .stat-bar {
-  height: 10px;
-  background: #0f172a;
-  border-radius: 5px;
+  height: 8px;
+  background: rgba(246, 238, 219, 0.1);
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .stat-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
-  border-radius: 5px;
+  background: var(--color-lime);
+  border-radius: 4px;
   transition: width 0.4s ease;
 }
 
@@ -206,8 +211,8 @@ h2, h3 { font-family: var(--font-pixel); font-weight: 400; }
 .anim-float { animation: epicFloat 4s ease-in-out infinite; }
 
 @keyframes mysticGlow {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.3)); }
-  50% { filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.6)); }
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(212, 255, 58, 0.25)); }
+  50% { filter: drop-shadow(0 0 15px rgba(212, 255, 58, 0.5)); }
 }
 .anim-glow { animation: mysticGlow 3s ease-in-out infinite; }
 
@@ -227,3 +232,6 @@ h2, h3 { font-family: var(--font-pixel); font-weight: 400; }
   z-index: 9999;
   mix-blend-mode: overlay;
 }
+
+/* Scanlines retired with the dusk theme */
+.scanlines::after { display: none; }

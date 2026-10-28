@@ -1,264 +1,311 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import KnightSprite from '@/components/character/KnightSprite';
+import { play } from '@/lib/sfx';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
+import WorldShell from '@/components/ui/WorldShell';
 import styles from './stages.module.css';
 
 const WORLDS = [
-  { id: 1, name: 'PIXEL FOREST',   range: [1,  20],  color: '#4ade80', emoji: '🌲' },
-  { id: 2, name: 'CRYSTAL CAVE',   range: [21, 40],  color: '#22d3ee', emoji: '💎' },
-  { id: 3, name: 'SHADOW REALM',   range: [41, 60],  color: '#a78bfa', emoji: '🌑' },
-  { id: 4, name: 'FIRE MOUNTAIN',  range: [61, 80],  color: '#f87171', emoji: '🌋' },
-  { id: 5, name: 'GOLDEN PALACE',  range: [81, 100], color: '#fbbf24', emoji: '👑' },
+  { id: 1, name: 'Pixel Forest',  range: [1,  20],  accent: '#9be15d' },
+  { id: 2, name: 'Crystal Cave',  range: [21, 40],  accent: '#5fd8f0' },
+  { id: 3, name: 'Shadow Realm',  range: [41, 60],  accent: '#b48cff' },
+  { id: 4, name: 'Fire Mountain', range: [61, 80],  accent: '#ff8a4c' },
+  { id: 5, name: 'Golden Palace', range: [81, 100], accent: '#ffd25e' },
 ];
 
-function getStarCount(results: Record<number, { stars: number }>, stage: number): number {
-  return results[stage]?.stars ?? 0;
+/** Height of one row of the stage path: 96 px on phones, 112 px wider */
+const rowHeight = (cols: number) => (cols === 4 ? 96 : 112);
+
+/** Where stage i sits on a winding path `cols` wide: rows alternate direction */
+function spot(i: number, cols: number) {
+  const row = Math.floor(i / cols);
+  const k = i % cols;
+  return { row, col: row % 2 === 0 ? k : cols - 1 - k };
 }
 
-function Stars({ count }: { count: number }) {
-  return (
-    <div className={styles.stars}>
-      {[1, 2, 3].map(n => (
-        <span key={n} className={n <= count ? styles.starOn : styles.starOff}>★</span>
-      ))}
-    </div>
-  );
-}
+type Labyrinth = { address: string; name: string; plays: number; creator?: string };
 
 export default function StagesPage() {
   const router = useRouter();
   const { connection } = useConnection();
   const { connected, publicKey } = useWallet();
-  const { stageResults, highestStage, totalStars } = usePlayerStore();
+  const { setVisible } = useWalletModal();
+  const { stageResults, highestStage, infiniteHighScore, hero, equippedItems } = usePlayerStore();
+  const [cols, setCols] = useState(5);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    const fit = () => setCols(window.innerWidth < 640 ? 4 : 5);
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
+
+  const goWorld = (id: number) => {
+    const w = Math.min(5, Math.max(1, id));
+    if (w !== worldId) play('choose');
+    setWorldId(w);
+  };
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'SOLO' | 'COMMUNITY'>('SOLO');
-  
-  const [sovereignLabyrinths, setSovereignLabyrinths] = useState<{address: string, name: string, plays: number}[]>([]);
-  const [communityLabyrinths, setCommunityLabyrinths] = useState<any[]>([]);
+  const [worldId, setWorldId] = useState(1);
+  const [community, setCommunity] = useState(false);
+
+  const [sovereignLabyrinths, setSovereignLabyrinths] = useState<Labyrinth[]>([]);
+  const [communityLabyrinths, setCommunityLabyrinths] = useState<Labyrinth[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const progress = mounted ? highestStage : 0;
+  const next = Math.min(progress + 1, 100);
 
   const agentService = useMemo(() => {
     if (!connected || !mounted) return null;
-    return new MazeAgentService(connection.rpcEndpoint, { publicKey }, "sk-placeholder");
+    return new MazeAgentService(connection.rpcEndpoint, { publicKey }, 'sk-placeholder');
   }, [connection.rpcEndpoint, connected, publicKey, mounted]);
 
+  // Open on the world that holds the next stage
   useEffect(() => {
     setMounted(true);
+    const h = usePlayerStore.getState().highestStage;
+    setWorldId(Math.min(5, Math.floor(Math.min(h, 99) / 20) + 1));
+    if (location.hash === '#community') setCommunity(true);
   }, []);
 
   useEffect(() => {
-    if (agentService) {
-      setIsLoading(true);
-      
-      const p1 = publicKey ? agentService.getSovereignLabyrinths(publicKey.toString()) : Promise.resolve([]);
-      const p2 = agentService.getCommunityLabyrinths();
-      
-      Promise.all([p1, p2]).then(([myLabs, publicLabs]) => {
-        setSovereignLabyrinths(myLabs);
-        setCommunityLabyrinths(publicLabs);
-      }).finally(() => setIsLoading(false));
-    }
-  }, [agentService, publicKey]);
+    if (!agentService || !community) return;
+    setIsLoading(true);
+    const p1 = publicKey ? agentService.getSovereignLabyrinths(publicKey.toString()) : Promise.resolve([]);
+    const p2 = agentService.getCommunityLabyrinths();
+    Promise.all([p1, p2]).then(([mine, publicLabs]) => {
+      setSovereignLabyrinths(mine);
+      setCommunityLabyrinths(publicLabs);
+    }).finally(() => setIsLoading(false));
+  }, [agentService, publicKey, community]);
 
-  const handleStage = (n: number) => router.push(`/game/${n}`);
-  const handleInfinite = () => router.push('/game/infinite');
+  const closeCommunity = () => {
+    setCommunity(false);
+    history.replaceState(null, '', location.pathname);
+  };
+
+  const world = WORLDS[worldId - 1];
+  const [from, to] = world.range;
+  const stages = Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  const cleared = mounted ? stages.filter(n => stageResults[n]).length : 0;
+  const stars = mounted ? stages.reduce((sum, n) => sum + (stageResults[n]?.stars ?? 0), 0) : 0;
+  const locked = from > progress + 1;
+  const continueStage = next >= from && next <= to ? next : null;
+
+  const ROW = rowHeight(cols);
   const handleSovereign = (address: string) => router.push(`/game/sovereign?id=${address}`);
 
   return (
-    <div className={`${styles.page} scanlines`}>
-      {/* ── Header ── */}
-      <header className={styles.header}>
-        <button 
-          id="home-btn" 
-          className="btn btn-secondary btn-sm" 
-          onClick={() => router.push('/')}
-        >
-          ◀ HOME
-        </button>
-        <h1 className={styles.title}>ORIM</h1>
-        <div className={styles.headerStats}>
-          <div className={styles.coinDisplay}>
-             <span className="font-pixel">⭐ {totalStars}</span>
+    <WorldShell active="worlds">
+      <div className={styles.page} style={{ ['--world' as string]: world.accent }}>
+        {/* ── World title ─────────────────────── */}
+        <header className={styles.head}>
+          <div className={styles.titleBlock}>
+            <span className={styles.tag}>World {worldId} of 5</span>
+            <h1 className={styles.title} key={worldId}>{world.name}</h1>
+            <p className={styles.meta}>
+              {locked
+                ? `Opens after stage ${from - 1}`
+                : <>{cleared} of 20 cleared · <span className={styles.lime}>★</span> {stars} of 60</>}
+            </p>
           </div>
-          <button 
-            id="shop-btn" 
-            className="btn btn-gold btn-sm" 
-            onClick={() => router.push('/shop')}
-          >
-            🛒 SHOP
-          </button>
-        </div>
-      </header>
-
-      {/* ── Tab Switcher ── */}
-      <div className={styles.tabSwitcher}>
-        <button 
-          className={`${styles.tabBtn} ${activeTab === 'SOLO' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('SOLO')}
-        >
-          SOLO CAMPAIGN
-        </button>
-        <button 
-          className={`${styles.tabBtn} ${activeTab === 'COMMUNITY' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('COMMUNITY')}
-        >
-          COMMUNITY LABYRINTHS
-        </button>
-        <button 
-          className={styles.tabBtn}
-          style={{ borderColor: '#a78bfa', color: '#c4b5fd' }}
-          onClick={() => handleInfinite()}
-        >
-          INFINITE MAZE
-        </button>
-      </div>
-
-      {activeTab === 'SOLO' ? (
-        <div className="anim-fadein">
-          {/* ── Global Stats Bar ── */}
-          <div className={styles.statsBar}>
-            <div className={styles.statItem}>
-              <span className={styles.statVal}>{mounted ? highestStage : 0}</span>
-              <span className={styles.statLab}>HIGH SCORE</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statVal}>{mounted ? totalStars : 0}</span>
-              <span className={styles.statLab}>TOTAL STARS</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statVal}>{mounted ? Object.keys(stageResults).length : 0}</span>
-              <span className={styles.statLab}>CLEARED</span>
-            </div>
+          <div className={styles.arrows}>
+            <button
+              type="button"
+              className={styles.arrow}
+              onClick={() => goWorld(worldId - 1)}
+              disabled={worldId === 1}
+              aria-label="Previous world"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+            <button
+              type="button"
+              className={styles.arrow}
+              onClick={() => goWorld(worldId + 1)}
+              disabled={worldId === 5}
+              aria-label="Next world"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
           </div>
+        </header>
 
-          {/* ── Worlds ── */}
-          <div className={styles.worlds}>
-            {mounted && WORLDS.map((world) => {
-              const [from, to] = world.range;
-              const worldStages = Array.from({ length: to - from + 1 }, (_, i) => from + i);
-              const worldCleared = worldStages.filter(s => getStarCount(stageResults, s) > 0).length;
-              const isWorldLocked = from > 1 && highestStage < from - 1;
+        {/* ── Stage path ──────────────────────── */}
+        <section
+          className={`${styles.board} ${locked ? styles.boardLocked : ''}`}
+          aria-label={`${world.name} stages`}
+          onTouchStart={e => { const t = e.touches[0]; swipe.current = { x: t.clientX, y: t.clientY }; }}
+          onTouchEnd={e => {
+            const st = swipe.current;
+            swipe.current = null;
+            if (!st) return;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - st.x;
+            if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(t.clientY - st.y) * 1.5) goWorld(worldId + (dx < 0 ? 1 : -1));
+          }}
+        >
+          <div className={styles.map} key={`${worldId}-${cols}`} style={{ height: Math.ceil(stages.length / cols) * ROW }}>
+            <svg className={styles.trail} viewBox={`0 0 1000 ${Math.ceil(stages.length / cols) * ROW}`} preserveAspectRatio="none" aria-hidden="true">
+              {stages.slice(1).map((n, i) => {
+                const a = spot(i, cols);
+                const b = spot(i + 1, cols);
+                const ax = ((a.col + 0.5) / cols) * 1000, ay = a.row * ROW + ROW / 2;
+                const bx = ((b.col + 0.5) / cols) * 1000, by = b.row * ROW + ROW / 2;
+                const bend = a.row !== b.row ? (a.col === 0 ? -70 : 70) : 0;
+                const d = bend
+                  ? `M${ax} ${ay} C${ax + bend} ${ay} ${bx + bend} ${by} ${bx} ${by}`
+                  : `M${ax} ${ay} L${bx} ${by}`;
+                const lit = mounted && n <= progress + 1;
+                return <path key={n} d={d} className={lit ? styles.trailLit : styles.trailDim} vectorEffect="non-scaling-stroke" />;
+              })}
+            </svg>
 
-              return (
-                <div 
-                  key={world.id} 
-                  className={`${styles.world} ${isWorldLocked ? styles.worldLocked : ''}`}
+            {stages.map((n, i) => {
+              const { row, col } = spot(i, cols);
+              const r = mounted ? stageResults[n] : undefined;
+              const isLocked = !mounted || n > progress + 1;
+              const isNext = mounted && n === next && !r;
+              const gate = n === to;
+              const cls = `${styles.node} ${r ? styles.cleared : ''} ${isNext ? styles.next : ''} ${isLocked ? styles.locked : ''} ${gate ? styles.gate : ''}`;
+              const pos = { left: `${((col + 0.5) / cols) * 100}%`, top: row * ROW + ROW / 2, animationDelay: `${i * 18}ms` };
+              const body = (
+                <>
+                  {isNext && <KnightSprite className={styles.nodeHero} hero={hero} gear={equippedItems} fps={4} />}
+                  <span className={styles.disc}>
+                    {isLocked ? <span className={styles.lockIcon} aria-hidden="true" /> : <span className={styles.num}>{n}</span>}
+                  </span>
+                  {r && (
+                    <span className={styles.stars} aria-hidden="true">
+                      {[1, 2, 3].map(k => <i key={k} className={k <= r.stars ? styles.starOn : ''}>★</i>)}
+                    </span>
+                  )}
+                </>
+              );
+              return isLocked ? (
+                <span key={n} className={cls} style={pos} aria-label={`Stage ${n}, locked`}>{body}</span>
+              ) : (
+                <Link
+                  key={n}
+                  id={`stage-btn-${n}`}
+                  href={`/game/${n}`}
+                  className={cls}
+                  style={pos}
+                  onClick={() => play('choose')}
+                  aria-label={`Stage ${n}${r ? `, ${r.stars} of 3 stars` : ''}`}
                 >
-                  <div className={styles.worldHeader}>
-                    <span className={styles.worldEmoji}>{world.emoji}</span>
-                    <div className={styles.worldInfo}>
-                      <p className={styles.worldName} style={{ color: world.color }}>
-                        {world.name}
-                      </p>
-                      <p className={styles.worldRange}>Stages {from} – {to}</p>
-                    </div>
-                    <div className={styles.worldProgress}>
-                      {isWorldLocked ? (
-                        <span className={styles.lock}>🔒</span>
-                      ) : (
-                        <span className={styles.worldCount}>
-                          {worldCleared}/{worldStages.length}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={styles.stageGrid}>
-                    {worldStages.map((n) => {
-                      const stars = getStarCount(stageResults, n);
-                      const isCleared = stars > 0;
-                      const isNext    = n === highestStage + 1;
-                      const isLocked  = isWorldLocked || (n > 1 && n > highestStage + 1);
-
-                      return (
-                        <button
-                          key={n}
-                          id={`stage-btn-${n}`}
-                          className={`${styles.stageBtn}
-                            ${isCleared ? styles.stageCleared : ''}
-                            ${isNext    ? styles.stageNext    : ''}
-                            ${isLocked  ? styles.stageLocked  : ''}
-                          `}
-                          onClick={() => !isLocked && handleStage(n)}
-                          disabled={isLocked}
-                        >
-                          <span className={styles.stageNum}>{n}</span>
-                          <Stars count={stars} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                  {body}
+                </Link>
               );
             })}
           </div>
-        </div>
-      ) : (
-        <div className="anim-fadein">
-          {/* ── Sovereign Labyrinths (My Creations) ── */}
-          {mounted && sovereignLabyrinths.length > 0 && (
-            <div className={styles.sovereignSection}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionIcon}>🏺</span>
-                <h2 className={styles.sectionTitle}>MY SOVEREIGN LABYRINTHS</h2>
-              </div>
-              <div className={styles.sovereignGrid}>
-                {sovereignLabyrinths.map((lab) => (
-                  <button 
-                    key={lab.address}
-                    className={styles.sovereignBtn}
-                    onClick={() => handleSovereign(lab.address)}
-                  >
-                    <div className={styles.sovereignIcon}>💠</div>
-                    <div className={styles.sovereignInfo}>
-                      <p className={styles.sovereignName}>{lab.name}</p>
-                      <p className={styles.sovereignAddr}>{lab.address.slice(0, 8)}...{lab.address.slice(-4)}</p>
-                    </div>
-                    <div className={styles.playsInfo}>
-                      <span className={styles.playCount}>👤 {lab.plays}</span>
-                      <span className={styles.playArrow}>▶</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* ── Community Discover (Public) ── */}
-          <div className={styles.sovereignSection}>
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionIcon}>🌎</span>
-              <h2 className={styles.sectionTitle}>GLOBAL DISCOVERY</h2>
-            </div>
-            <div className={styles.sovereignGrid}>
-              {communityLabyrinths.map((lab) => (
-                <button 
-                  key={lab.address}
-                  className={styles.sovereignBtn}
-                  style={{ borderLeftColor: lab.mood === 'Void' ? '#7c3aed' : lab.mood === 'Radiant' ? '#fbbf24' : '#06b6d4' }}
-                  onClick={() => handleSovereign(lab.address)}
-                >
-                  <div className={styles.sovereignIcon}>
-                    {lab.mood === 'Void' ? '🌑' : lab.mood === 'Radiant' ? '☀️' : '💠'}
+          <div className={styles.boardFoot}>
+            {continueStage ? (
+              <Link href={`/game/${continueStage}`} className={styles.play} onClick={() => play('start')}>
+                {progress === 0 ? 'Start stage 1' : `Continue · stage ${continueStage}`} <b aria-hidden="true" />
+              </Link>
+            ) : locked ? (
+              <span className={styles.footNote}>This world opens after stage {from - 1}.</span>
+            ) : (
+              <span className={styles.footNote}>World cleared. Replay any stage to earn all three stars.</span>
+            )}
+          </div>
+        </section>
+
+        {/* ── More ways to play ───────────────── */}
+        <section className={styles.modes} aria-labelledby="more-modes">
+          <h2 id="more-modes" className={styles.modesTitle}>More ways to play</h2>
+          <Link href="/game/infinite" className={styles.mode}>
+            <span className={styles.modeBadge} aria-hidden="true">∞</span>
+            <span className={styles.modeText}>
+              <strong>Infinite run</strong>
+              <small>{mounted && infiniteHighScore > 0 ? `Endless mazes · best ${infiniteHighScore}` : 'Endless mazes, as far as you can go'}</small>
+            </span>
+            <svg className={styles.modeGo} viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </Link>
+          <button
+            type="button"
+            className={styles.mode}
+            onClick={() => { setCommunity(true); history.replaceState(null, '', '#community'); }}
+          >
+            <span className={`${styles.modeBadge} ${styles.modeBadgeStone}`} aria-hidden="true" />
+            <span className={styles.modeText}>
+              <strong>Community labyrinths</strong>
+              <small>Mazes players summoned on Solana</small>
+            </span>
+            <svg className={styles.modeGo} viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </section>
+      </div>
+
+      {/* ── Community sheet ───────────────────── */}
+      {community && (
+        <div className={styles.sheetBackdrop} onClick={e => { if (e.target === e.currentTarget) closeCommunity(); }}>
+          <div className={styles.sheet} role="dialog" aria-modal="true" aria-label="Community labyrinths">
+            <button type="button" className={styles.close} onClick={closeCommunity} aria-label="Close">✕</button>
+            <h2 className={styles.sheetTitle}>Community labyrinths</h2>
+
+            {!connected ? (
+              <div className={styles.empty}>
+                <p>Connect a wallet to discover labyrinths summoned by other players, and your own.</p>
+                <button type="button" className="btn btn-primary" onClick={() => setVisible(true)}>Connect wallet</button>
+              </div>
+            ) : isLoading ? (
+              <div className={styles.empty}><p>Scanning the network…</p></div>
+            ) : (
+              <>
+                {sovereignLabyrinths.length > 0 && (
+                  <>
+                    <h3 className={styles.listTitle}>Yours</h3>
+                    <div className={styles.labs}>
+                      {sovereignLabyrinths.map(lab => (
+                        <button key={lab.address} type="button" className={styles.lab} onClick={() => handleSovereign(lab.address)}>
+                          <span className={styles.labIcon} />
+                          <span className={styles.labInfo}>
+                            <strong>{lab.name}</strong>
+                            <small>{lab.address.slice(0, 6)}…{lab.address.slice(-4)} · {lab.plays} plays</small>
+                          </span>
+                          <span className={styles.labGo}>▶</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <h3 className={styles.listTitle}>Global discovery</h3>
+                {communityLabyrinths.length ? (
+                  <div className={styles.labs}>
+                    {communityLabyrinths.map(lab => (
+                      <button key={lab.address} type="button" className={styles.lab} onClick={() => handleSovereign(lab.address)}>
+                        <span className={styles.labIcon} />
+                        <span className={styles.labInfo}>
+                          <strong>{lab.name.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase())}</strong>
+                          <small>by {lab.creator} · {lab.plays} plays</small>
+                        </span>
+                        <span className={styles.labGo}>▶</span>
+                      </button>
+                    ))}
                   </div>
-                  <div className={styles.sovereignInfo}>
-                    <p className={styles.sovereignName}>{lab.name}</p>
-                    <p className={styles.sovereignAddr}>BY {lab.creator}</p>
+                ) : (
+                  <div className={styles.empty}>
+                    <p>No labyrinths yet. Be the first to summon one.</p>
+                    <Link href="/architect" className="btn btn-primary">Create a labyrinth</Link>
                   </div>
-                  <div className={styles.playsInfo}>
-                    <span className={styles.playCount}>👤 {lab.plays}</span>
-                    <span className={styles.playArrow}>▶</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
-    </div>
+    </WorldShell>
   );
 }
