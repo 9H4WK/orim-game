@@ -1,0 +1,235 @@
+.shell {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip;
+  background: var(--color-bg);
+  color: var(--color-cream);
+}
+
+/* ── World ─────────────────────────────────────────────────── */
+.sky {
+  position: fixed;
+  inset: 0;
+  background: url('/bg_far_mountains.png') center 62% / cover no-repeat;
+  image-rendering: pixelated;
+}
+
+.mist {
+  position: fixed;
+  left: -50%;
+  right: -50%;
+  bottom: 18%;
+  height: 34%;
+  background:
+    radial-gradient(40% 60% at 30% 60%, rgba(200, 190, 230, 0.14), transparent 70%),
+    radial-gradient(35% 50% at 70% 40%, rgba(200, 190, 230, 0.1), transparent 70%);
+  animation: drift 38s linear infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes drift { to { transform: translateX(18%); } }
+
+.shade {
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(22, 15, 43, 0.6) 0%, rgba(22, 15, 43, 0.25) 30%, rgba(14, 9, 28, 0.85) 75%, rgba(14, 9, 28, 0.96) 100%);
+  pointer-events: none;
+}
+
+/* ── Nav (mirrors the landing) ─────────────────────────────── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 64px;
+  padding: 0 clamp(16px, 3vw, 48px);
+  background: rgba(22, 15, 43, 0.82);
+  border-bottom: 1px solid var(--color-line);
+  backdrop-filter: blur(14px);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  text-decoration: none;
+  color: var(--color-cream);
+}
+
+.menu {
+  display: flex;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(22, 15, 43, 0.55);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(10px);
+}
+
+.menu a {
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: var(--color-text-dim);
+  font: 500 14px var(--font-body);
+  text-decoration: none;
+  transition: background .2s, color .2s;
+}
+
+.menu a:hover { color: var(--color-cream); background: rgba(246, 238, 219, 0.08); }
+
+.menu a.on {
+  color: var(--color-bg);
+  background: var(--color-cream);
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.purse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(22, 15, 43, 0.55);
+  border: 1px solid var(--color-line);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.star { color: var(--color-lime); }
+
+.coin {
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  box-shadow: inset -2px -2px 0 var(--color-lime-deep);
+}
+
+.menuBtn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: rgba(22, 15, 43, 0.55);
+  cursor: pointer;
+}
+
+.menuBtn span { display: block; height: 2px; background: var(--color-cream); }
+
+.main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Menu sheet ────────────────────────────────────────────── */
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(14, 9, 28, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.sheet {
+  position: relative;
+  width: min(480px, 100%);
+  padding: 24px;
+  border-radius: 16px;
+  background: #1d1438;
+  border: 1px solid var(--color-line);
+}
+
+.close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: rgba(246, 238, 219, 0.06);
+  color: var(--color-cream);
+  cursor: pointer;
+}
+
+.mobileMenu {
+  display: flex;
+  flex-direction: column;
+  padding-top: 48px;
+}
+
+.mobileMenu a {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-cream);
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 32px;
+  text-decoration: none;
+}
+
+.mobileMenu a[aria-current='page'] { color: var(--color-lime); }
+
+.sheetFoot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.sheetPurse {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-text-dim);
+}
+
+.sheetPurse .coin { margin-left: 12px; }
+
+.sheetFoot :global(.wallet-adapter-button) { width: 100%; justify-content: center; }
+
+@media (max-width: 900px) {
+  .nav { grid-template-columns: auto 1fr; height: 56px; padding: 0 16px; }
+  .logo { font-size: 20px; }
+  .menu { display: none; }
+  .menuBtn { display: flex; }
+}
+
+@media (max-width: 599px) {
+  .purse, .wallet { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mist { animation: none; }
+}

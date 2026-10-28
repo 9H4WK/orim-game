@@ -1,74 +1,82 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, type CSSProperties } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { OrimBlockchainService, PROGRAM_ID } from '@/lib/blockchain/program-service';
-import styles from './home.module.css';
-import PixelIcon from '@/components/ui/PixelIcon';
-import PixelPanel from '@/components/ui/PixelPanel';
-import PixelBackground from '@/components/ui/PixelBackground';
-import HeroChibi from '@/components/character/HeroChibi';
+import KnightSprite from '@/components/character/KnightSprite';
 import RankingBoard from '@/components/ui/RankingBoard';
-import { 
-  LOGO_O, LOGO_R, LOGO_I, LOGO_M, 
-  ICON_FEAT_QUEST, ICON_FEAT_ARCHITECT, 
-  ICON_FEAT_CHIBI, ICON_FEAT_GLORY,
-  BG_STARS, BG_CLOUDS, BG_MOUNTAINS,
-  UI_PALETTE 
-} from '@/lib/maze/uiPixels';
+import { usePlayerStore } from '@/lib/store/playerStore';
+import styles from './home.module.css';
+
+const SANDBOX_PROGRAM = 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS';
 
 const FEATURES = [
-  { matrix: ICON_FEAT_QUEST, title: 'Legendary Quests', desc: 'Conquer 100 floors of progressive mechanical peril.' },
-  { matrix: ICON_FEAT_ARCHITECT, title: 'Architect Mode', desc: 'Design, verify, and mint your own dungeons as NFTs.' },
-  { matrix: ICON_FEAT_CHIBI, title: 'Heroic Chibi', desc: 'Equip rare artifacts that physically change your appearance.' },
-  { matrix: ICON_FEAT_GLORY, title: 'On-Chain Glory', desc: 'Fair randomness powered by MagicBlock VRF and Solana.' },
+  { tag: '100 floors', title: 'Legendary quests', desc: 'Conquer 100 floors of progressive mechanical peril across five worlds.' },
+  { tag: 'Mint your maze', title: 'Architect mode', desc: 'Design, verify, and mint your own dungeons as NFTs.' },
+  { tag: 'Hidden loot', title: 'Hidden loot', desc: 'Find rare hats and relics deep in the mazes, or unlock them with coins. Your hero wears them in every run.' },
+  { tag: 'MagicBlock VRF', title: 'On-chain glory', desc: 'Fair randomness powered by MagicBlock VRF and Solana.' },
 ];
 
-const CORE_TECH = [
-  { name: 'METAPLEX CORE', desc: 'The foundational layer for Sovereign Labyrinths. Utilizing the next-gen asset standard for atomic minting and autonomous metadata updates.' },
-  { name: 'MAGICBLOCK', desc: 'Powering high-fidelity performance. Ephemeral Rollups enable zero-latency movement, while VRF ensures tamper-proof procedural generation.' },
-  { name: 'SOLANA AGENT KIT', desc: 'The cognitive core of the Architect. AI-driven market analysis synchronizes the labyrinth state with real-world price data.' },
+/** About, in plain words: what it is, how it plays, what it runs on */
+const ABOUT = [
+  { title: 'How it plays', desc: 'Your hero runs the corridors on their own. At every fork you choose the way. Fewer wrong turns, more stars.' },
+  { title: '100 stages', desc: 'Five worlds, from small 7×7 mazes to sprawling ones. Then an infinite run that never repeats.' },
+  { title: 'Items', desc: 'Hats, armour and relics for your hero. Buy them with coins from your stars, or find the rare ones hidden in the mazes.' },
+  { title: 'Make your own', desc: 'Draw a maze for anyone to play, or summon a labyrinth on Solana that takes its mood from the market.' },
 ];
 
-const ROADMAP = [
-  { phase: 'PHASE 1', title: 'GENESIS SUMMONING', desc: 'Core engine deployment, Metaplex Core asset integration, and basic stage architecture.' },
-  { phase: 'PHASE 2', title: 'DIVINE EVOLUTION', desc: 'Solana Agent Kit integration for market-driven labyrinth shifts and AI-guided discovery.' },
-  { phase: 'PHASE 3', title: 'SOVEREIGN CLASH', desc: 'Community discovery hub, multi-user clear tracking, and expanded item economy.' },
-  { phase: 'PHASE 4', title: 'ETERNAL EXPANSION', desc: 'Cross-chain labyrinth portals, autonomous reward distribution, and advanced architect tools.' },
+const BUILT_ON = 'Solana · Metaplex Core · MagicBlock';
+
+const STICKERS: { cls: string; r: string; delay: string }[] = [
+  { cls: styles.s1, r: '-7deg', delay: '0.8s' },
+  { cls: styles.s2, r: '6deg', delay: '0.95s' },
+  { cls: styles.s3, r: '4deg', delay: '1.1s' },
+  { cls: styles.s4, r: '-4deg', delay: '1.25s' },
 ];
+
+type Sheet = 'about' | 'ranks' | 'menu' | null;
 
 export default function HomePage() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const { connected, publicKey } = useWallet();
   const router = useRouter();
-  
+  const { highestStage } = usePlayerStore();
+
   const [mounted, setMounted] = useState(false);
   const [profileExists, setProfileExists] = useState<boolean | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [initError, setInitError] = useState('');
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const skyRef = useRef<HTMLDivElement>(null);
+
+  const isSandbox = PROGRAM_ID.toBase58() === SANDBOX_PROGRAM;
+  const nextStage = Math.min((mounted ? highestStage : 0) + 1, 100);
+  const playHref = mounted && highestStage >= 100 ? '/game/infinite' : `/game/${nextStage}`;
 
   const checkProfile = useCallback(async (pubkey: PublicKey) => {
     try {
-      const service = new OrimBlockchainService(connection, wallet!);
-      if (PROGRAM_ID.toBase58() === 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS') {
-        const isInit = localStorage.getItem(`orim_sandbox_init_${pubkey.toBase58()}`);
-        setProfileExists(isInit === 'true');
+      if (isSandbox) {
+        setProfileExists(localStorage.getItem(`orim_sandbox_init_${pubkey.toBase58()}`) === 'true');
         return;
       }
+      const service = new OrimBlockchainService(connection, wallet!);
       const pda = await service.getUserProfilePda(pubkey);
       const acc = await connection.getAccountInfo(pda);
       setProfileExists(acc !== null);
-    } catch (e) {
+    } catch {
       setProfileExists(false);
     }
-  }, [connection, wallet]);
+  }, [connection, wallet, isSandbox]);
 
   useEffect(() => {
     setMounted(true);
     if (connected && wallet && publicKey) {
+      setProfileExists(null);
       checkProfile(publicKey);
     }
   }, [connected, wallet, publicKey, checkProfile]);
@@ -76,146 +84,178 @@ export default function HomePage() {
   const handleInitProfile = async () => {
     if (!wallet) return;
     setIsInitializing(true);
+    setInitError('');
     try {
       const service = new OrimBlockchainService(connection, wallet);
       await service.initializeUserProfile();
       setProfileExists(true);
-    } catch (e: any) {
+    } catch (e) {
       console.error('Initialization Error:', e);
-      alert(`Initialization Failed: ${e.message || 'Check Console'}`);
+      setInitError(e instanceof Error ? e.message : 'Initialization failed');
     } finally {
       setIsInitializing(false);
     }
   };
 
-  if (!mounted) return null;
+  // Enter plays, Escape closes a sheet
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSheet(null);
+      if (e.key === 'Enter' && !sheet && e.target === document.body) router.push(playHref);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [router, sheet, playHref]);
 
-  const isSandbox = PROGRAM_ID.toBase58() === 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS';
+  // Gentle parallax on the mountains
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      const el = skyRef.current;
+      if (!el) return;
+      el.style.setProperty('--px', `${(e.clientX / window.innerWidth - 0.5) * -14}px`);
+      el.style.setProperty('--py', `${(e.clientY / window.innerHeight - 0.5) * -8}px`);
+    };
+    window.addEventListener('pointermove', move);
+    return () => window.removeEventListener('pointermove', move);
+  }, []);
+
+  const short = publicKey ? `${publicKey.toBase58().slice(0, 4)}…${publicKey.toBase58().slice(-4)}` : '';
 
   return (
     <div className={styles.page}>
-      <PixelBackground 
-        layers={[
-          { matrix: BG_STARS, palette: UI_PALETTE, scale: 6, opacity: 0.3, speedY: 0.2 },
-          { matrix: BG_CLOUDS, palette: UI_PALETTE, scale: 8, opacity: 0.15, speedX: 0.1, speedY: 0 },
-          { matrix: BG_MOUNTAINS, palette: UI_PALETTE, scale: 12, opacity: 0.08, speedY: 0 }
-        ]} 
-      />
+      <div ref={skyRef} className={styles.sky} />
+      <div className={styles.mist} />
+      <div className={styles.shade} />
 
-      <div className={styles.scanlines} />
+      {/* ── Nav ─────────────────────────────── */}
+      <nav className={styles.nav}>
+        <Link className={styles.logo} href="/">
+          <svg width="24" height="24" viewBox="0 0 12 12" aria-hidden="true" shapeRendering="crispEdges">
+            <path fill="#f6eedb" d="M0 0h12v2H2v8h8V4H4v4h2V6h2v4H4v-2H2V2h10v10H0Z" />
+            <rect x="6" y="6" width="2" height="2" fill="#d4ff3a" />
+          </svg>
+          ORIM
+        </Link>
 
-      <div className={styles.content}>
-        <PixelPanel variant="stone" className={styles.mainBoard}>
-          <div className={styles.integratedLogo}>
-            <div className={styles.logoRow}>
-              {[LOGO_O, LOGO_R, LOGO_I, LOGO_M].map((matrix, i) => (
-                <div key={i} className={styles.logoCharWrap} style={{ animationDelay: `${i * 0.15}s` }}>
-                  <PixelIcon matrix={matrix} size={100} palette={UI_PALETTE} />
-                </div>
-              ))}
-            </div>
-            <p className={styles.logoSub}>The Eternal Maze</p>
+        <div className={styles.menu}>
+          <Link href="/stages">Worlds</Link>
+          <Link href="/shop">Items</Link>
+          <Link href="/architect">Create</Link>
+          <button type="button" onClick={() => setSheet('ranks')}>Ranks</button>
+          <button type="button" onClick={() => setSheet('about')}>About</button>
+        </div>
+
+        <div className={styles.account}>
+          {mounted && connected && isSandbox && <span className={styles.sandbox}>Sandbox</span>}
+          {mounted && <WalletMultiButton />}
+          <button type="button" className={styles.menuBtn} onClick={() => setSheet('menu')} aria-label="Open menu">
+            <span /><span /><span />
+          </button>
+        </div>
+      </nav>
+
+      {/* ── Stage ───────────────────────────── */}
+      <div className={styles.stage} aria-hidden="true">
+        <div className={styles.word}>ORIM</div>
+        {FEATURES.map((f, i) => (
+          <span
+            key={f.tag}
+            className={`${styles.sticker} ${STICKERS[i].cls}`}
+            style={{ '--r': STICKERS[i].r, '--in': STICKERS[i].delay } as CSSProperties}
+          >
+            {f.tag}
+          </span>
+        ))}
+        <div className={styles.rock} />
+        <div className={styles.ground} />
+        <div className={styles.hero}>
+          <KnightSprite />
+        </div>
+        {mounted && Array.from({ length: 16 }, (_, i) => (
+          <span
+            key={i}
+            className={styles.spark}
+            style={{
+              left: `${36 + ((i * 37) % 28)}%`,
+              '--s': i % 3 === 0 ? '5px' : '3px',
+              '--c': i % 3 === 1 ? '#f6eedb' : '#d4ff3a',
+              '--d': `${5 + (i % 5)}s`,
+              '--delay': `${-((i * 0.73) % 10)}s`,
+              '--dx': `${((i * 29) % 120) - 60}px`,
+            } as CSSProperties}
+          />
+        ))}
+      </div>
+
+      {/* ── Bottom ──────────────────────────── */}
+      <section className={styles.bottom}>
+        <div className={styles.pitch}>
+          <span className={styles.tag}>▶ The eternal maze · on Solana</span>
+          <h1>Find the way out.</h1>
+          <p>Pick a hero. They run every corridor, you choose every turn. 100 stages, hidden loot, and mazes you build yourself.</p>
+        </div>
+
+        <div className={styles.cta}>
+          <Link href={playHref} className={styles.play}>
+            {mounted && highestStage > 0 ? `Play stage ${nextStage}` : 'Play now'} <b aria-hidden="true" />
+          </Link>
+
+          <div className={styles.status}>
+            {!mounted || !connected ? (
+              <span>No wallet needed · <Link href="/stages">All worlds</Link> · <Link href="/architect">Build a maze</Link></span>
+            ) : profileExists === null ? (
+              <span><i className={styles.dot} />Syncing with adventure ledger…</span>
+            ) : profileExists === false ? (
+              <span>
+                {isSandbox ? 'Local character not initialised' : 'No adventurer on-chain yet'} ·{' '}
+                <button type="button" onClick={handleInitProfile} disabled={isInitializing}>
+                  {isInitializing ? 'Initialising…' : 'Initialise adventurer'}
+                </button>
+              </span>
+            ) : (
+              <span><i className={`${styles.dot} ${styles.dotOn}`} />{isSandbox ? 'Sandbox adventurer' : 'Adventurer'} {short} ready</span>
+            )}
+            {initError && <span className={styles.error}>{initError}</span>}
           </div>
+        </div>
+      </section>
 
-          <div className={styles.walletInside}>
-            {connected ? (
-              <div className={styles.connectedArea}>
-                <div className={styles.walletHeader}>
-                   <div className={styles.onlineDot} style={{ background: isSandbox ? '#fbbf24' : '#10b981' }} />
-                   <span className={styles.walletAddr}>
-                     {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
-                   </span>
-                   {isSandbox && <span className={styles.sandboxBadge}>SANDBOX</span>}
-                </div>
+      {/* ── Sheets ──────────────────────────── */}
+      {sheet && (
+        <div className={styles.sheetBackdrop} onClick={e => { if (e.target === e.currentTarget) setSheet(null); }}>
+          <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={sheet === 'about' ? 'About ORIM' : sheet === 'ranks' ? 'Rankings' : 'Menu'}>
+            <button type="button" className={styles.close} onClick={() => setSheet(null)} aria-label="Close">✕</button>
 
-                <div className={styles.heroDossier}>
-                  <div className={styles.heroPreviewWrap}>
-                    <HeroChibi size={120} animate={true} />
-                    <div className={styles.heroGlow} />
-                  </div>
-                  <div className={styles.heroStats}>
-                    <p className={styles.heroName}>{isSandbox ? 'SANDBOX ADVENTURER' : 'LEGENDARY EXPLORER'}</p>
-                    <p className={styles.heroRank}>RANK: ASCENDANT</p>
-                  </div>
-                </div>
-
-                {profileExists === null ? (
-                  <div className={styles.registrationArea}>
-                    <div className={styles.loadingSpinner} />
-                    <p className={styles.connectHint}>SYNCING WITH ADVENTURE LEDGER...</p>
-                  </div>
-                ) : profileExists === false ? (
-                  <div className={styles.registrationArea}>
-                    <p className={styles.connectHint}>
-                      {isSandbox ? 'LOCAL CHARACTER NOT INITIALIZED' : 'CHARACTER NOT FOUND ON-CHAIN'}
-                    </p>
-                    <button className="btn btn-gold btn-lg" onClick={handleInitProfile} disabled={isInitializing}>
-                      {isInitializing ? 'INITIALIZING...' : 'INITIALIZE ADVENTURER'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className={styles.primaryActions}>
-                    <button className="btn btn-primary btn-lg" onClick={() => router.push('/stages')}>
-                      START GAME ▶
-                    </button>
-                    <div className={styles.subActions}>
-                      <button className="btn btn-gold btn-sm" onClick={() => router.push('/architect')}>
-                        CREATE MAZE MAP
-                      </button>
-                      <button className="btn btn-gold btn-sm" onClick={() => router.push('/shop')}>
-                        ITEM
-                      </button>
+            {sheet === 'menu' ? (
+              <nav className={styles.mobileMenu}>
+                <Link href="/stages">Worlds</Link>
+                <Link href="/shop">Items</Link>
+                <Link href="/architect">Create</Link>
+                <button type="button" onClick={() => setSheet('ranks')}>Ranks</button>
+                <button type="button" onClick={() => setSheet('about')}>About</button>
+              </nav>
+            ) : sheet === 'about' ? (
+              <div className={styles.about}>
+                <h2>About ORIM</h2>
+                <p className={styles.lead}>A maze game where your hero runs and you choose the turns.</p>
+                <dl className={styles.aboutList}>
+                  {ABOUT.map(a => (
+                    <div key={a.title}>
+                      <dt>{a.title}</dt>
+                      <dd>{a.desc}</dd>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </dl>
+                <p className={styles.built}>Built on {BUILT_ON}</p>
               </div>
             ) : (
-              <div className={styles.connectArea}>
-                <p className={styles.connectHint}>SYNC WALLET TO TRANSCEND</p>
-                <div style={{ marginBottom: '10px' }}>
-                  <WalletMultiButton />
-                </div>
+              <div className={styles.ranks}>
+                <RankingBoard />
               </div>
             )}
           </div>
-
-          <div className={styles.featuresInside}>
-            {FEATURES.map(({ matrix, title, desc }, i) => (
-              <div key={i} className={styles.featureCell}>
-                <div className={styles.featureIcon}>
-                  <PixelIcon matrix={matrix} size={48} palette={UI_PALETTE} />
-                </div>
-                <div>
-                  <p className={styles.featureTitle}>{title}</p>
-                  <p className={styles.featureDesc}>{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </PixelPanel>
-
-        {/* ── Core Technologies Section ── */}
-        <section className={styles.architectureSection}>
-          <h2 className={styles.sectionTitle}>CORE ARCHITECTURE</h2>
-          <div className={styles.coreTechGrid}>
-            {CORE_TECH.map((tech, i) => (
-              <div key={i} className={styles.techCard}>
-                <h3 className={styles.techName}>{tech.name}</h3>
-                <p className={styles.techDesc}>{tech.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Ranking Board Section ── */}
-        <section id="rankingBoard" className={styles.rankingSection} style={{ width: '100%', marginTop: '100px', marginBottom: '80px' }}>
-          <RankingBoard />
-        </section>
-
-        <p className={styles.footer}>
-          Est. 2026 • Code-Art Developed • Solomon Ecosystem
-        </p>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

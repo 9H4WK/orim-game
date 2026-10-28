@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { HeroId } from '@/lib/maze/knight';
 
 export interface StageResult {
   stage: number;
@@ -12,6 +13,7 @@ export interface StageResult {
 export interface PlayerState {
   walletAddress: string | null;
   username: string;
+  hero: HeroId;
   totalStars: number;
   highestStage: number;
   stageResults: Record<number, StageResult>;
@@ -32,6 +34,7 @@ export interface PlayerState {
 
   // Actions
   setWallet: (address: string | null) => void;
+  setHero: (hero: HeroId) => void;
   recordClear: (result: StageResult) => void;
   addItem: (itemId: string) => void;
   equipItem: (slot: keyof PlayerState['equippedItems'], itemId: string | null) => void;
@@ -47,6 +50,7 @@ export const usePlayerStore = create<PlayerState>()(
     (set, get) => ({
       walletAddress: null,
       username: 'Explorer',
+      hero: 'knight',
       totalStars: 0,
       highestStage: 0,
       stageResults: {},
@@ -66,6 +70,8 @@ export const usePlayerStore = create<PlayerState>()(
       customMaps: [],
 
       setWallet: (address) => set({ walletAddress: address }),
+
+      setHero: (hero) => set({ hero }),
 
       recordClear: (result) => {
         const { stageResults, totalStars, highestStage } = get();

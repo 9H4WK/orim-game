@@ -49,7 +49,7 @@ export default function DirectionPicker({ availableDirections, onChoose }: Direc
 
   return (
     <div className={styles.dirBar}>
-      <p className={styles.hint}>🔀 CROSSROADS — CHOOSE PATH</p>
+      <p className={styles.hint}>Choose a path</p>
 
       {/* Up row */}
       <div className={styles.btnRow}>

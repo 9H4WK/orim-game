@@ -9,12 +9,10 @@ import styles from './architect.module.css';
 
 // ORIM UI Components
 import PixelIcon from '@/components/ui/PixelIcon';
-import PixelPanel from '@/components/ui/PixelPanel';
-import PixelBackground from '@/components/ui/PixelBackground';
-import { 
-  ICON_FEAT_ARCHITECT, 
-  BG_STARS, BG_CLOUDS, 
-  UI_PALETTE 
+import WorldShell from '@/components/ui/WorldShell';
+import {
+  ICON_FEAT_ARCHITECT,
+  UI_PALETTE
 } from '@/lib/maze/uiPixels';
 
 export default function ArchitectPage() {
@@ -97,169 +95,145 @@ export default function ArchitectPage() {
 
   if (!mounted) return null;
 
+  const explorer = (path: string) => `https://explorer.solana.com/${path}?cluster=devnet`;
+
   return (
-    <div className={styles.page}>
-      <PixelBackground 
-        layers={[
-          { matrix: BG_STARS, palette: UI_PALETTE, scale: 6, opacity: 0.3, speedY: 0.2 },
-          { matrix: BG_CLOUDS, palette: UI_PALETTE, scale: 8, opacity: 0.1, speedX: 0.1, speedY: 0 },
-        ]} 
-      />
-      <div className={styles.scanlines} />
+    <WorldShell active="create">
+      <div className={styles.page}>
+        <header className={styles.head}>
+          <span className={styles.tag}>▶ Create</span>
+          <h1 className={styles.title}>Build a maze</h1>
+          <p className={styles.sub}>Draw one by hand, or summon a living labyrinth on Solana.</p>
+        </header>
 
-      <div className={styles.content}>
-        <button className={styles.backButton} onClick={() => router.push('/')}>
-          « BACK TO VOID
-        </button>
-
-        <PixelPanel variant="stone" className={styles.mainBoard}>
-          <header className={styles.header}>
-            <div className={styles.iconWrap}>
-              <PixelIcon matrix={ICON_FEAT_ARCHITECT} size={80} palette={UI_PALETTE} />
-            </div>
-            <h1>Divine Architect</h1>
-            <p className={styles.subtext}>Forge a living labyrinth with its own soul and economy.</p>
-            <div className={styles.walletBox}>
-              <WalletMultiButton />
-            </div>
-          </header>
-
-          <div className={styles.grid}>
-            <div className={styles.summonCard}>
-              <div className={styles.inputGroup}>
-                <label>Labyrinth Name</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Neon Void, Crystal Sanctum" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={isSummoning}
-                />
+        <div className={styles.paths}>
+          {/* ── Draw ─────────────────────────────── */}
+          <section className={styles.card}>
+            <div className={styles.cardArt}>
+              <div className={styles.miniGrid} aria-hidden="true">
+                {Array.from({ length: 49 }, (_, i) => {
+                  const open = [8, 9, 10, 17, 24, 25, 26, 33, 40, 41, 12, 19, 26, 27, 34].includes(i);
+                  return <i key={i} className={i === 8 ? styles.cellStart : i === 41 ? styles.cellEnd : open ? styles.cellOpen : ''} />;
+                })}
               </div>
-
-              <div className={styles.inputGroup}>
-                <label>Initial Mood / Soul Type</label>
-                <select 
-                  value={mood} 
-                  onChange={(e) => setMood(e.target.value)}
-                  disabled={isSummoning}
-                >
-                  <option value="Mystic">Mystic (Ethereal & Complex)</option>
-                  <option value="Aggressive">Aggressive (Chaotic & Rewarding)</option>
-                  <option value="Zen">Zen (Symmetrical & Flowing)</option>
-                  <option value="Greedy">Greedy (Market-Driven & Volatile)</option>
-                </select>
-              </div>
-
-              <button 
-                className="btn btn-primary btn-lg" 
-                style={{ width: '100%' }}
-                onClick={handleSummon}
-                disabled={isSummoning || !name || !wallet.publicKey}
-              >
-                {isSummoning ? 'SUMMONING...' : 'SUMMON AUTONOMOUS LABYRINTH'}
+            </div>
+            <div className={styles.cardBody}>
+              <span className={styles.badge}>Free · instant</span>
+              <h2>Draw a maze</h2>
+              <p>Paint paths on a 15×15 grid, place a start and an exit, then run it yourself to prove it works.</p>
+              <button type="button" className={styles.primary} onClick={() => router.push('/custom')}>
+                Open the editor <b aria-hidden="true" />
               </button>
+            </div>
+          </section>
+
+          {/* ── Summon ───────────────────────────── */}
+          <section className={`${styles.card} ${styles.cardChain}`}>
+            <div className={styles.cardArt}>
+              <div className={styles.iconWrap}>
+                <PixelIcon matrix={ICON_FEAT_ARCHITECT} size={96} palette={UI_PALETTE} />
+              </div>
+            </div>
+            <div className={styles.cardBody}>
+              <span className={styles.badge}>Solana devnet</span>
+              <h2>Summon a labyrinth</h2>
+
+              {!result ? (
+                <>
+                  <p>A sovereign NFT with its own soul and energy token. Its layout comes from its address.</p>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="lab-name">Labyrinth name</label>
+                    <input
+                      id="lab-name"
+                      type="text"
+                      placeholder="e.g. Neon Void, Crystal Sanctum"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={isSummoning}
+                    />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label>Starting mood</label>
+                    <div className={styles.moods}>
+                      {[
+                        ['Mystic', 'Ethereal & complex'],
+                        ['Aggressive', 'Chaotic & rewarding'],
+                        ['Zen', 'Symmetrical & flowing'],
+                        ['Greedy', 'Market-driven'],
+                      ].map(([id, note]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          className={`${styles.mood} ${mood === id ? styles.moodOn : ''}`}
+                          onClick={() => setMood(id)}
+                          disabled={isSummoning}
+                          aria-pressed={mood === id}
+                        >
+                          <strong>{id}</strong>
+                          <small>{note}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {wallet.publicKey ? (
+                    <button type="button" className={styles.primary} onClick={handleSummon} disabled={isSummoning || !name.trim()}>
+                      {isSummoning ? 'Summoning…' : 'Summon labyrinth'} <b aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <div className={styles.walletBox}><WalletMultiButton /></div>
+                  )}
+                </>
+              ) : (
+                <div className={styles.result}>
+                  <p className={styles.resultTitle}>Your labyrinth is alive.</p>
+                  <div className={styles.statRow}>
+                    <span className={styles.statLabel}>Core identity</span>
+                    <a href={explorer(`address/${result.assetAddress}`)} target="_blank" rel="noreferrer" className={styles.linkValue}>
+                      {result.assetAddress.slice(0, 10)}… ↗
+                    </a>
+                  </div>
+                  <div className={styles.statRow}>
+                    <span className={styles.statLabel}>Energy token</span>
+                    <a href={explorer(`address/${result.tokenMint}`)} target="_blank" rel="noreferrer" className={styles.linkValue}>
+                      {result.tokenMint.slice(0, 10)}… ↗
+                    </a>
+                  </div>
+                  <div className={styles.statRow}>
+                    <span className={styles.statLabel}>Summoning tx</span>
+                    <a href={explorer(`tx/${result.signature}`)} target="_blank" rel="noreferrer" className={styles.linkValue}>
+                      View ↗
+                    </a>
+                  </div>
+                  {evolution && (
+                    <div className={styles.statRow}>
+                      <span className={styles.statLabel}>Mood · SOL ${evolution.currentPrice}</span>
+                      <span className={styles.statValue}>{evolution.newMood}</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.primary}
+                    onClick={() => router.push(`/game/sovereign?id=${result.assetAddress}&mood=${evolution?.newMood || mood}`)}
+                  >
+                    Enter your labyrinth <b aria-hidden="true" />
+                  </button>
+                  <button type="button" className={styles.secondary} onClick={handleEvolve} disabled={isEvolving}>
+                    {isEvolving ? 'Syncing market…' : 'Sync mood with the market'}
+                  </button>
+                </div>
+              )}
 
               {status.length > 0 && (
-                <div className={styles.terminal}>
+                <div className={styles.terminal} role="log" aria-live="polite">
                   {status.map((line, i) => (
                     <div key={i} className={styles.terminalLine}>{line}</div>
                   ))}
                 </div>
               )}
             </div>
-
-            {result && (
-              <div className={styles.resultCard}>
-                <h2 className={styles.resultTitle}>LABYRINTH ASCENDED</h2>
-                
-                <div className={styles.infoBox}>
-                   <p className={styles.infoText}>
-                     Your creation is now a **Sovereign NFT** on Solana. It resides in your wallet and can be evolved through the market pulse.
-                   </p>
-                </div>
-
-                <div className={styles.statRow}>
-                  <span className={styles.statLabel}>CORE IDENTITY</span>
-                  <a 
-                    href={`https://explorer.solana.com/address/${result.assetAddress}?cluster=devnet`} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className={styles.linkValue}
-                  >
-                    {result.assetAddress.slice(0, 12)}... ↗
-                  </a>
-                </div>
-                <div className={styles.statRow}>
-                  <span className={styles.statLabel}>ENERGY TOKEN</span>
-                  <a 
-                    href={`https://explorer.solana.com/address/${result.tokenMint}?cluster=devnet`} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className={styles.linkValue}
-                  >
-                    {result.tokenMint.slice(0, 12)}... ↗
-                  </a>
-                </div>
-                <div className={styles.statRow}>
-                  <span className={styles.statLabel}>AUTONOMY</span>
-                  <span className={styles.statValue} style={{ color: '#10b981' }}>SOVEREIGN</span>
-                </div>
-                
-                <div className={styles.statRow} style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                  <span className={styles.statLabel}>SUMMONING TX</span>
-                  <a 
-                    href={`https://explorer.solana.com/tx/${result.signature}?cluster=devnet`} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className={styles.txLink}
-                  >
-                    VIEW ON EXPLORER ↗
-                  </a>
-                </div>
-
-                <div className={styles.actionRow} style={{ marginTop: '20px' }}>
-                   <button 
-                     className="btn btn-primary btn-lg" 
-                     style={{ width: '100%', padding: '1.25rem' }}
-                     onClick={() => router.push(`/game/sovereign?id=${result.assetAddress}&mood=${evolution?.newMood || mood}`)}
-                   >
-                     ENTER YOUR LABYRINTH ▶
-                   </button>
-                </div>
-                
-                <div className={styles.evolutionBox}>
-                  <p className={styles.loreText}>
-                    &quot;The Labyrinth senses your presence. It will now begin to evolve based on the world&apos;s pulse.&quot;
-                  </p>
-                  
-                  <button 
-                    className="btn btn-gold btn-sm" 
-                    style={{ width: '100%', marginTop: '1rem' }}
-                    onClick={handleEvolve}
-                    disabled={isEvolving}
-                  >
-                    {isEvolving ? 'SYNCING MARKET...' : 'SYNCHRONIZE WITH PULSE'}
-                  </button>
-
-                  {evolution && (
-                    <div className={styles.evoStats}>
-                      <div className={styles.statRow}>
-                        <span className={styles.statLabel}>SOL PRICE</span>
-                        <span className={styles.statValue}>${evolution.currentPrice}</span>
-                      </div>
-                      <div className={styles.statRow}>
-                        <span className={styles.statLabel}>ACTIVE MOOD</span>
-                        <span className={styles.statValue} style={{ color: '#fbbf24' }}>{evolution.newMood}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </PixelPanel>
-      </div >
-    </div>
+          </section>
+        </div>
+      </div>
+    </WorldShell>
   );
 }
