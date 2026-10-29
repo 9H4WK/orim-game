@@ -2,6 +2,22 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { HeroId } from '@/lib/maze/knight';
 
+/**
+ * Saved on this device under "orim-player".
+ * v0 (before the Africa's Talking migration) also held a Solana wallet address;
+ * v1 drops it and keeps every other field exactly as it was.
+ */
+export const PLAYER_STORE_VERSION = 1;
+
+export function migratePlayerState(persisted: unknown, fromVersion: number): unknown {
+  if (!persisted || typeof persisted !== 'object') return persisted;
+  const state = { ...(persisted as Record<string, unknown>) };
+  if (fromVersion < 1) {
+    delete state.walletAddress;
+  }
+  return state;
+}
+
 export interface StageResult {
   stage: number;
   stars: number;
@@ -11,7 +27,6 @@ export interface StageResult {
 }
 
 export interface PlayerState {
-  walletAddress: string | null;
   username: string;
   hero: HeroId;
   totalStars: number;
@@ -33,7 +48,6 @@ export interface PlayerState {
   customMaps: any[];
 
   // Actions
-  setWallet: (address: string | null) => void;
   setHero: (hero: HeroId) => void;
   recordClear: (result: StageResult) => void;
   addItem: (itemId: string) => void;
@@ -48,7 +62,6 @@ export interface PlayerState {
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({
-      walletAddress: null,
       username: 'Explorer',
       hero: 'knight',
       totalStars: 0,
@@ -68,8 +81,6 @@ export const usePlayerStore = create<PlayerState>()(
       foundEasterEggs: [],
       coins: 100, // start with some coins for demo
       customMaps: [],
-
-      setWallet: (address) => set({ walletAddress: address }),
 
       setHero: (hero) => set({ hero }),
 
@@ -130,6 +141,6 @@ export const usePlayerStore = create<PlayerState>()(
 
       addCustomMap: (map) => set((s) => ({ customMaps: [...s.customMaps, map] })),
     }),
-    { name: 'orim-player' }
+    { name: 'orim-player', version: PLAYER_STORE_VERSION, migrate: migratePlayerState as never }
   )
 );

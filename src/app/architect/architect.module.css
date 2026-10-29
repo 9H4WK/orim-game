@@ -174,7 +174,7 @@
 
 .secondary:disabled { opacity: .5; cursor: wait; }
 
-.walletBox { display: flex; }
+.error { font-size: 13px; color: #ff9a8a; }
 
 /* Form */
 .inputGroup {

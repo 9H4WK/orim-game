@@ -24,6 +24,8 @@ const CELL = 42;
 const RES = 2;
 /** Back wall above the top row: heads and hats on the first row overlap it, inside the board */
 const HEADROOM = CELL * 0.85;
+/** Smallest on-screen cell before the board switches to a camera that follows the hero */
+const MIN_CELL_PX = 14;
 /** How long one step between cells takes on screen; matches the game's step timer */
 const STEP_MS = 200;
 
@@ -298,16 +300,29 @@ export default function MazeCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maze]);
 
-  // Big mazes get a camera that follows the hero; small ones show whole
-  const [maxView, setMaxView] = useState(13);
+  // Show the whole maze, start to exit, whenever its cells stay readable on this screen.
+  // Only mazes too big for that get a camera that follows the hero.
+  // The probe measures the space the page's CSS gives the board (--maze-max-w, --maze-reserve).
+  const probeRef = useRef<HTMLDivElement>(null);
+  const [space, setSpace] = useState({ w: 0, h: 0 });
   useEffect(() => {
-    const fit = () => setMaxView(window.innerWidth < 760 ? 9 : 13);
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    const probe = probeRef.current;
+    if (!probe) return;
+    const measure = () => {
+      const r = probe.getBoundingClientRect();
+      setSpace(prev => (prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(probe);
+    window.addEventListener('resize', measure);
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
   }, []);
-  const viewW = Math.min(maze.width, maxView);
-  const viewH = Math.min(maze.height, maxView);
+  // Until measured, assume a small phone so the first frame never overflows
+  const fitW = space.w ? Math.floor(space.w / MIN_CELL_PX) : 20;
+  const fitH = space.h ? Math.floor((space.h - HEADROOM / 2) / MIN_CELL_PX) : 20;
+  const viewW = Math.min(maze.width, Math.max(7, fitW));
+  const viewH = Math.min(maze.height, Math.max(7, fitH));
   const follows = viewW < maze.width || viewH < maze.height;
 
   useEffect(() => {
@@ -476,16 +491,31 @@ export default function MazeCanvas({
   // The board is the maze plus its back wall; it fits the width and the height left over by the HUD
   const aspect = (viewW * CELL) / (viewH * CELL + HEADROOM);
   return (
-    <canvas
-      ref={canvasRef}
-      onPointerUp={handlePointer}
-      width={viewW * CELL * RES}
-      height={(viewH * CELL + HEADROOM) * RES}
-      style={{
-        display: 'block',
-        width: `min(var(--maze-max-w, 92vw), calc((100svh - var(--maze-reserve, 150px)) * ${aspect.toFixed(4)}))`,
-        height: 'auto',
-      }}
-    />
+    <>
+      <div
+        ref={probeRef}
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: 'var(--maze-max-w, 92vw)',
+          height: 'calc(100svh - var(--maze-reserve, 150px))',
+          visibility: 'hidden',
+          pointerEvents: 'none',
+        }}
+      />
+      <canvas
+        ref={canvasRef}
+        onPointerUp={handlePointer}
+        width={viewW * CELL * RES}
+        height={(viewH * CELL + HEADROOM) * RES}
+        style={{
+          display: 'block',
+          width: `min(var(--maze-max-w, 92vw), calc((100svh - var(--maze-reserve, 150px)) * ${aspect.toFixed(4)}))`,
+          height: 'auto',
+        }}
+      />
+    </>
   );
 }

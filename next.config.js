@@ -1,31 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Suppress service-worker-related fetch errors from wallet adapter extensions
+  // Self-contained server bundle for the Docker image (Africa's Talking Marketplace)
+  output: 'standalone',
+  // Server-only packages loaded at runtime by Node rather than bundled
+  serverExternalPackages: ['africastalking', 'pg', '@electric-sql/pglite'],
   headers: async () => [
     {
       source: '/(.*)',
       headers: [
-        { key: 'Service-Worker-Allowed', value: '/' },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       ],
     },
   ],
-  turbopack: {}, // Suppress Next.js 16 warning when using custom webpack config
-  webpack: (config, { isServer }) => {
-    // Wallet adapter polyfills
-    config.externals.push('pino-pretty', 'lokijs', 'encoding');
-
-    if (!isServer) {
-      // Prevent Node.js modules from bundling in browser
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        crypto: false,
-      };
-    }
-    return config;
-  },
 };
 
 module.exports = nextConfig;

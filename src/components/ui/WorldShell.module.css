@@ -217,7 +217,6 @@
 
 .sheetPurse .coin { margin-left: 12px; }
 
-.sheetFoot :global(.wallet-adapter-button) { width: 100%; justify-content: center; }
 
 @media (max-width: 900px) {
   .nav { grid-template-columns: auto 1fr; height: 56px; padding: 0 16px; }
@@ -227,7 +226,7 @@
 }
 
 @media (max-width: 599px) {
-  .purse, .wallet { display: none; }
+  .purse { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

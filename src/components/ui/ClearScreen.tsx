@@ -1,12 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './ClearScreen.module.css';
 import { getItemById } from '@/lib/shop/items';
 import { usePlayerStore } from '@/lib/store/playerStore';
 
 const KnightSprite = dynamic(() => import('../character/KnightSprite'), { ssr: false });
+
+/** What the server said about an online run. Wording never claims more than is known. */
+export type Verification =
+  | { state: 'submitting' }
+  | { state: 'verified'; durationMs: number; mistakes: number; underReview: boolean }
+  | { state: 'rejected'; reason: string }
+  | { state: 'error'; message: string };
 
 interface ClearScreenProps {
   stage: number;
@@ -19,6 +26,11 @@ interface ClearScreenProps {
   isInfiniteMode?: boolean;
   infiniteStageCount?: number;
   foundEasterEggs?: string[];
+  /** Online runs (challenge or competition): result is checked by the server, no coins */
+  online?: { label: string; nextLabel: string; verification: Verification };
+  onChallenge?: () => void;
+  challengeBusy?: boolean;
+  challengeError?: string;
 }
 
 function formatTime(ms: number): string {
@@ -31,8 +43,22 @@ function formatTime(ms: number): string {
 
 import PixelIcon from './PixelIcon';
 
-import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
-import { OrimBlockchainService } from '@/lib/blockchain/program-service';
+const REJECT_TEXT: Record<string, string> = {
+  expired: 'This run took too long to submit, so it was not counted.',
+  implausibly_fast: 'This run was faster than the game allows, so it was not counted.',
+};
+
+function statusLine(v: Verification | undefined, online: boolean): { text: string; tone: 'ok' | 'wait' | 'warn' } {
+  if (!online || !v) return { text: 'Saved on this device', tone: 'ok' };
+  switch (v.state) {
+    case 'submitting': return { text: 'Run submitted · checking your path…', tone: 'wait' };
+    case 'verified': return v.underReview
+      ? { text: 'Verified · this result will be reviewed before any prize', tone: 'ok' }
+      : { text: 'Verified by the server', tone: 'ok' };
+    case 'rejected': return { text: REJECT_TEXT[v.reason] ?? 'This run could not be verified, so it was not counted.', tone: 'warn' };
+    case 'error': return { text: v.message, tone: 'warn' };
+  }
+}
 
 export default function ClearScreen({
   stage,
@@ -45,29 +71,19 @@ export default function ClearScreen({
   isInfiniteMode = false,
   infiniteStageCount = 0,
   foundEasterEggs = [],
+  online,
+  onChallenge,
+  challengeBusy = false,
+  challengeError,
 }: ClearScreenProps) {
-  const { connection } = useConnection();
   const equippedItems = usePlayerStore((st) => st.equippedItems);
   const hero = usePlayerStore((st) => st.hero);
-  const wallet = useAnchorWallet();
   const [visibleStars, setVisibleStars] = useState(0);
   const [showContent, setShowContent] = useState(false);
-  const [statusText, setStatusText] = useState('');
-  const [txId, setTxId] = useState<string | null>(null);
   const confettiRef = useRef(false);
-
-  const syncResult = useCallback(async () => {
-    setStatusText('Recording on Solana…');
-    try {
-      const service = new OrimBlockchainService(connection, wallet!);
-      const sig = await service.recordStageClear(stage, stars);
-      setTxId(sig);
-      setStatusText('Recorded on-chain');
-    } catch (e: any) {
-      console.error('Sync error:', e);
-      setStatusText('Sync failed · your result is saved on this device');
-    }
-  }, [connection, wallet, stage, stars]);
+  const verification = online?.verification;
+  const verified = verification?.state === 'verified' ? verification : null;
+  const status = statusLine(verification, !!online);
 
   useEffect(() => {
     const delays = [600, 1000, 1400];
@@ -75,14 +91,7 @@ export default function ClearScreen({
       setTimeout(() => setVisibleStars(i + 1), delay);
     });
 
-    setTimeout(() => {
-      setShowContent(true);
-      if (wallet) {
-        syncResult();
-      } else {
-        setStatusText('Saved on this device · connect a wallet to record on-chain');
-      }
-    }, 1900);
+    setTimeout(() => setShowContent(true), 1900);
 
     if (!confettiRef.current) {
       confettiRef.current = true;
@@ -97,7 +106,7 @@ export default function ClearScreen({
         })();
       });
     }
-  }, [stars, wallet, syncResult]);
+  }, [stars]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -108,13 +117,14 @@ export default function ClearScreen({
   }, [onRetry]);
 
   const headline = stars === 3 ? 'Flawless!' : stars === 2 ? 'Cleared!' : 'Escaped!';
-  const nextLabel = isInfiniteMode ? 'Keep going' : stage >= 100 ? 'Infinite mode' : `Stage ${stage + 1}`;
+  const nextLabel = online?.nextLabel ?? (isInfiniteMode ? 'Keep going' : stage >= 100 ? 'Infinite mode' : `Stage ${stage + 1}`);
+  const label = online?.label ?? (isInfiniteMode ? `Infinite maze #${infiniteStageCount + 1}` : `Stage ${stage}`);
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${headline} ${isInfiniteMode ? 'Infinite maze' : `Stage ${stage}`}`}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${headline} ${label}`}>
       <div className={styles.card}>
         <span className={styles.tag}>
-          ▶ {isInfiniteMode ? `Infinite maze #${infiniteStageCount + 1}` : `Stage ${stage}`}
+          ▶ {label}
         </span>
         <h2 className={styles.stageBadge}>{headline}</h2>
 
@@ -133,19 +143,21 @@ export default function ClearScreen({
         {showContent && (
           <div className={`${styles.stats} anim-slideup`}>
             <div className={styles.statRow}>
-              <span className={styles.statLabel}>Time</span>
-              <span className={styles.statValue}>{formatTime(clearTime)}</span>
+              <span className={styles.statLabel}>{verified ? 'Verified time' : 'Time'}</span>
+              <span className={styles.statValue}>{formatTime(verified ? verified.durationMs : clearTime)}</span>
             </div>
             <div className={styles.statRow}>
               <span className={styles.statLabel}>Wrong turns</span>
-              <span className={`${styles.statValue} ${mistakes > 0 ? styles.statDanger : styles.statSuccess}`}>
-                {mistakes}
+              <span className={`${styles.statValue} ${(verified ? verified.mistakes : mistakes) > 0 ? styles.statDanger : styles.statSuccess}`}>
+                {verified ? verified.mistakes : mistakes}
               </span>
             </div>
-            <div className={styles.statRow}>
-              <span className={styles.statLabel}>Coins</span>
-              <span className={`${styles.statValue} ${styles.statSuccess}`}>+{stars * 10}</span>
-            </div>
+            {!online && (
+              <div className={styles.statRow}>
+                <span className={styles.statLabel}>Coins</span>
+                <span className={`${styles.statValue} ${styles.statSuccess}`}>+{stars * 10}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -175,22 +187,20 @@ export default function ClearScreen({
             </button>
             <div className={styles.secondary}>
               <button id="clear-retry-btn" onClick={onRetry}>Retry <kbd>R</kbd></button>
+              {onChallenge && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <button id="clear-challenge-btn" onClick={onChallenge} disabled={challengeBusy}>
+                    {challengeBusy ? 'Making…' : 'Challenge a friend'}
+                  </button>
+                </>
+              )}
               <span aria-hidden="true">·</span>
               <button id="clear-menu-btn" onClick={onMenu}>Worlds</button>
             </div>
-            <div className={styles.onChainStatus}>
-              <div className={styles.onlineDot} />
-              <span className={styles.syncText}>{statusText || 'Ready to sync'}</span>
-              {txId && !txId.startsWith('sandbox') && (
-                <a
-                  href={`https://explorer.solana.com/tx/${txId}?cluster=devnet`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.txLink}
-                >
-                  View tx ↗
-                </a>
-              )}
+            <div className={styles.status} role="status" aria-live="polite">
+              <div className={`${styles.dot} ${status.tone === 'wait' ? styles.dotWait : status.tone === 'warn' ? styles.dotWarn : ''}`} />
+              <span className={styles.statusText}>{challengeError || status.text}</span>
             </div>
           </div>
         )}

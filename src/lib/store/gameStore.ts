@@ -18,7 +18,6 @@ export interface GameState {
 
   // Maze
   mazeData: MazeData | null;
-  vrfSeed: number[] | null;
 
   // Player position
   playerX: number;
@@ -60,7 +59,6 @@ export const useGameStore = create<GameState>()(
       currentStage: 1,
       isInfiniteMode: false,
       mazeData: null,
-      vrfSeed: null,
       playerX: 0,
       playerY: 0,
       playerDirection: 'right',

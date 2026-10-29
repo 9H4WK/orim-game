@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import styles from './WorldShell.module.css';
 
@@ -66,7 +65,6 @@ export default function WorldShell({ active, children }: { active?: Section; chi
             <span className={styles.star}>★</span>{mounted ? totalStars : 0}
             <i className={styles.coin} />{mounted ? coins : 0}
           </span>
-          {mounted && <span className={styles.wallet}><WalletMultiButton /></span>}
           <button type="button" className={styles.menuBtn} onClick={() => setMenu(true)} aria-label="Open menu">
             <span /><span /><span />
           </button>
@@ -90,7 +88,6 @@ export default function WorldShell({ active, children }: { active?: Section; chi
                 <span className={styles.star}>★</span> {mounted ? totalStars : 0} stars
                 <i className={styles.coin} /> {mounted ? coins : 0} coins
               </span>
-              {mounted && <WalletMultiButton />}
             </div>
           </div>
         </div>

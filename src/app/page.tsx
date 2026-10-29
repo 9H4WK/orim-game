@@ -1,24 +1,18 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, type CSSProperties } from 'react';
+import { useEffect, useState, useRef, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { PublicKey } from '@solana/web3.js';
-import { OrimBlockchainService, PROGRAM_ID } from '@/lib/blockchain/program-service';
 import KnightSprite from '@/components/character/KnightSprite';
 import RankingBoard from '@/components/ui/RankingBoard';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import styles from './home.module.css';
 
-const SANDBOX_PROGRAM = 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS';
-
 const FEATURES = [
   { tag: '100 floors', title: 'Legendary quests', desc: 'Conquer 100 floors of progressive mechanical peril across five worlds.' },
-  { tag: 'Mint your maze', title: 'Architect mode', desc: 'Design, verify, and mint your own dungeons as NFTs.' },
+  { tag: 'Draw your maze', title: 'Architect mode', desc: 'Draw your own dungeon and run it yourself to prove it works.' },
   { tag: 'Hidden loot', title: 'Hidden loot', desc: 'Find rare hats and relics deep in the mazes, or unlock them with coins. Your hero wears them in every run.' },
-  { tag: 'MagicBlock VRF', title: 'On-chain glory', desc: 'Fair randomness powered by MagicBlock VRF and Solana.' },
+  { tag: 'SMS challenges', title: 'Challenge a friend', desc: 'Text a friend the exact same maze and compare verified times.' },
 ];
 
 /** About, in plain words: what it is, how it plays, what it runs on */
@@ -26,10 +20,11 @@ const ABOUT = [
   { title: 'How it plays', desc: 'Your hero runs the corridors on their own. At every fork you choose the way. Fewer wrong turns, more stars.' },
   { title: '100 stages', desc: 'Five worlds, from small 7×7 mazes to sprawling ones. Then an infinite run that never repeats.' },
   { title: 'Items', desc: 'Hats, armour and relics for your hero. Buy them with coins from your stars, or find the rare ones hidden in the mazes.' },
-  { title: 'Make your own', desc: 'Draw a maze for anyone to play, or summon a labyrinth on Solana that takes its mood from the market.' },
+  { title: 'Challenge friends', desc: 'Send a friend the exact maze you just ran, by link or by SMS. The server checks both runs, so the comparison is fair.' },
+  { title: 'Make your own', desc: 'Draw a maze by hand and run it yourself to prove it works.' },
 ];
 
-const BUILT_ON = 'Solana · Metaplex Core · MagicBlock';
+const BUILT_ON = 'Next.js · Africa’s Talking SMS and Airtime';
 
 const STICKERS: { cls: string; r: string; delay: string }[] = [
   { cls: styles.s1, r: '-7deg', delay: '0.8s' },
@@ -41,61 +36,17 @@ const STICKERS: { cls: string; r: string; delay: string }[] = [
 type Sheet = 'about' | 'ranks' | 'menu' | null;
 
 export default function HomePage() {
-  const { connection } = useConnection();
-  const wallet = useAnchorWallet();
-  const { connected, publicKey } = useWallet();
   const router = useRouter();
   const { highestStage } = usePlayerStore();
 
   const [mounted, setMounted] = useState(false);
-  const [profileExists, setProfileExists] = useState<boolean | null>(null);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [initError, setInitError] = useState('');
   const [sheet, setSheet] = useState<Sheet>(null);
   const skyRef = useRef<HTMLDivElement>(null);
 
-  const isSandbox = PROGRAM_ID.toBase58() === SANDBOX_PROGRAM;
   const nextStage = Math.min((mounted ? highestStage : 0) + 1, 100);
   const playHref = mounted && highestStage >= 100 ? '/game/infinite' : `/game/${nextStage}`;
 
-  const checkProfile = useCallback(async (pubkey: PublicKey) => {
-    try {
-      if (isSandbox) {
-        setProfileExists(localStorage.getItem(`orim_sandbox_init_${pubkey.toBase58()}`) === 'true');
-        return;
-      }
-      const service = new OrimBlockchainService(connection, wallet!);
-      const pda = await service.getUserProfilePda(pubkey);
-      const acc = await connection.getAccountInfo(pda);
-      setProfileExists(acc !== null);
-    } catch {
-      setProfileExists(false);
-    }
-  }, [connection, wallet, isSandbox]);
-
-  useEffect(() => {
-    setMounted(true);
-    if (connected && wallet && publicKey) {
-      setProfileExists(null);
-      checkProfile(publicKey);
-    }
-  }, [connected, wallet, publicKey, checkProfile]);
-
-  const handleInitProfile = async () => {
-    if (!wallet) return;
-    setIsInitializing(true);
-    setInitError('');
-    try {
-      const service = new OrimBlockchainService(connection, wallet);
-      await service.initializeUserProfile();
-      setProfileExists(true);
-    } catch (e) {
-      console.error('Initialization Error:', e);
-      setInitError(e instanceof Error ? e.message : 'Initialization failed');
-    } finally {
-      setIsInitializing(false);
-    }
-  };
+  useEffect(() => { setMounted(true); }, []);
 
   // Enter plays, Escape closes a sheet
   useEffect(() => {
@@ -118,8 +69,6 @@ export default function HomePage() {
     window.addEventListener('pointermove', move);
     return () => window.removeEventListener('pointermove', move);
   }, []);
-
-  const short = publicKey ? `${publicKey.toBase58().slice(0, 4)}…${publicKey.toBase58().slice(-4)}` : '';
 
   return (
     <div className={styles.page}>
@@ -146,8 +95,6 @@ export default function HomePage() {
         </div>
 
         <div className={styles.account}>
-          {mounted && connected && isSandbox && <span className={styles.sandbox}>Sandbox</span>}
-          {mounted && <WalletMultiButton />}
           <button type="button" className={styles.menuBtn} onClick={() => setSheet('menu')} aria-label="Open menu">
             <span /><span /><span />
           </button>
@@ -190,33 +137,15 @@ export default function HomePage() {
       {/* ── Bottom ──────────────────────────── */}
       <section className={styles.bottom}>
         <div className={styles.pitch}>
-          <span className={styles.tag}>▶ The eternal maze · on Solana</span>
+          <span className={styles.tag}>▶ The eternal maze</span>
           <h1>Find the way out.</h1>
-          <p>Pick a hero. They run every corridor, you choose every turn. 100 stages, hidden loot, and mazes you build yourself.</p>
+          <p>Pick a hero. They run every corridor, you choose every turn. 100 stages, hidden loot, and the same maze for a friend to beat.</p>
         </div>
 
         <div className={styles.cta}>
           <Link href={playHref} className={styles.play}>
             {mounted && highestStage > 0 ? `Play stage ${nextStage}` : 'Play now'} <b aria-hidden="true" />
           </Link>
-
-          {mounted && connected && (
-          <div className={styles.status}>
-            {profileExists === null ? (
-              <span><i className={styles.dot} />Syncing with adventure ledger…</span>
-            ) : profileExists === false ? (
-              <span>
-                {isSandbox ? 'Local character not initialised' : 'No adventurer on-chain yet'} ·{' '}
-                <button type="button" onClick={handleInitProfile} disabled={isInitializing}>
-                  {isInitializing ? 'Initialising…' : 'Initialise adventurer'}
-                </button>
-              </span>
-            ) : (
-              <span><i className={`${styles.dot} ${styles.dotOn}`} />{isSandbox ? 'Sandbox adventurer' : 'Adventurer'} {short} ready</span>
-            )}
-            {initError && <span className={styles.error}>{initError}</span>}
-          </div>
-          )}
         </div>
       </section>
 

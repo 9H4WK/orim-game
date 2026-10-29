@@ -17,6 +17,8 @@
   color: var(--color-text-dim);
 }
 
+.note a { color: var(--color-lime); text-decoration: underline; text-underline-offset: 3px; }
+
 .board {
   display: grid;
   grid-template-columns: 200px 1fr;

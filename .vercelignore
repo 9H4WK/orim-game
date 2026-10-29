@@ -1,0 +1,8 @@
+.env
+.env*.local
+.orim-data
+node_modules
+.next
+out
+*.docx
+objectives-details.txt

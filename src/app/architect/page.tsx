@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
 import styles from './architect.module.css';
+import { api } from '@/lib/online/api';
 
 // ORIM UI Components
 import PixelIcon from '@/components/ui/PixelIcon';
@@ -15,87 +13,37 @@ import {
   UI_PALETTE
 } from '@/lib/maze/uiPixels';
 
-export default function ArchitectPage() {
-  const { connection } = useConnection();
-  const wallet = useWallet();
-  const router = useRouter();
-  const [name, setName] = useState('');
-  const [mood, setMood] = useState('Mystic');
-  const [isSummoning, setIsSummoning] = useState(false);
-  const [isEvolving, setIsEvolving] = useState(false);
-  const [status, setStatus] = useState<string[]>([]);
-  const [result, setResult] = useState<any>(null);
-  const [evolution, setEvolution] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
+/** Challenge sizes borrow the campaign's stage sizes, so a friend gets a familiar difficulty */
+const SIZES = [
+  { stage: 1, label: 'Quick', note: '7×7 · under a minute' },
+  { stage: 21, label: 'Classic', note: '22×22 · a proper run' },
+  { stage: 41, label: 'Long', note: '37×37 · for the patient' },
+];
 
-  // Memoize the service to avoid expensive re-initializations (Umi/Plugins)
-  const agentService = useMemo(() => {
-    if (!wallet.publicKey || !mounted) return null;
-    return new MazeAgentService(connection.rpcEndpoint, wallet, "sk-placeholder");
-  }, [connection.rpcEndpoint, wallet, mounted]);
+export default function ArchitectPage() {
+  const router = useRouter();
+  const [stage, setStage] = useState(SIZES[0].stage);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const addStatus = (msg: string) => {
-    setStatus(prev => [...prev, `> ${new Date().toLocaleTimeString()}: ${msg}`]);
-  };
-
-  const handleSummon = async () => {
-    if (!wallet.publicKey || !wallet.signTransaction) {
-      addStatus("Error: Please connect your wallet first.");
-      return;
-    }
-
-    setIsSummoning(true);
-    setStatus([]);
-    setResult(null);
-    addStatus(`Beginning Summoning Ritual for '${name}'...`);
-
+  const handleChallenge = async () => {
+    setBusy(true);
+    setError('');
     try {
-      if (!agentService) throw new Error("Service not initialized");
-      
-      addStatus("Initiating Atomic Summoning Ritual (Identity + Economy)...");
-      const result = await agentService.summonLabyrinth({
-        name,
-        uri: "https://arweave.net/maze-metadata-placeholder",
-        initialMood: mood
-      });
-
-      addStatus(`Success! Labyrinth ALIVE at: ${result.assetAddress.slice(0, 8)}...`);
-      addStatus(`Energy Economy Established: ${result.tokenMint.slice(0, 8)}...`);
-
-      setResult(result);
-      addStatus("Summoning Ritual Complete.");
-    } catch (err: any) {
-      console.error(err);
-      addStatus(`Summoning Failed: ${err.message}`);
-    } finally {
-      setIsSummoning(false);
-    }
-  };
-
-  const handleEvolve = async () => {
-    if (!result) return;
-    setIsEvolving(true);
-    addStatus("Initiating Market Synchronization Ritual...");
-
-    try {
-      if (!agentService) throw new Error("Service not initialized");
-      const evoData = await agentService.evolveMaze(result.assetAddress);
-      setEvolution(evoData);
-      addStatus(`Evolution Complete! Current Pulse: $${evoData.currentPrice}. Mood Shift: ${evoData.newMood}.`);
-    } catch (err: any) {
-      addStatus(`Evolution Failed: ${err.message}`);
-    } finally {
-      setIsEvolving(false);
+      const { token } = await api.createChallenge(stage);
+      router.push(`/c/${token}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the challenge.');
+      setBusy(false);
     }
   };
 
   if (!mounted) return null;
-
-  const explorer = (path: string) => `https://explorer.solana.com/${path}?cluster=devnet`;
 
   return (
     <WorldShell active="create">
@@ -103,7 +51,7 @@ export default function ArchitectPage() {
         <header className={styles.head}>
           <span className={styles.tag}>▶ Create</span>
           <h1 className={styles.title}>Build a maze</h1>
-          <p className={styles.sub}>Draw one by hand, or summon a living labyrinth on Solana.</p>
+          <p className={styles.sub}>Draw one by hand, or send a friend a maze to race you on.</p>
         </header>
 
         <div className={styles.paths}>
@@ -127,7 +75,7 @@ export default function ArchitectPage() {
             </div>
           </section>
 
-          {/* ── Summon ───────────────────────────── */}
+          {/* ── Challenge ────────────────────────── */}
           <section className={`${styles.card} ${styles.cardChain}`}>
             <div className={styles.cardArt}>
               <div className={styles.iconWrap}>
@@ -135,101 +83,32 @@ export default function ArchitectPage() {
               </div>
             </div>
             <div className={styles.cardBody}>
-              <span className={styles.badge}>Solana devnet</span>
-              <h2>Summon a labyrinth</h2>
-
-              {!result ? (
-                <>
-                  <p>A sovereign NFT with its own soul and energy token. Its layout comes from its address.</p>
-                  <div className={styles.inputGroup}>
-                    <label htmlFor="lab-name">Labyrinth name</label>
-                    <input
-                      id="lab-name"
-                      type="text"
-                      placeholder="e.g. Neon Void, Crystal Sanctum"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={isSummoning}
-                    />
-                  </div>
-                  <div className={styles.inputGroup}>
-                    <label>Starting mood</label>
-                    <div className={styles.moods}>
-                      {[
-                        ['Mystic', 'Ethereal & complex'],
-                        ['Aggressive', 'Chaotic & rewarding'],
-                        ['Zen', 'Symmetrical & flowing'],
-                        ['Greedy', 'Market-driven'],
-                      ].map(([id, note]) => (
-                        <button
-                          key={id}
-                          type="button"
-                          className={`${styles.mood} ${mood === id ? styles.moodOn : ''}`}
-                          onClick={() => setMood(id)}
-                          disabled={isSummoning}
-                          aria-pressed={mood === id}
-                        >
-                          <strong>{id}</strong>
-                          <small>{note}</small>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {wallet.publicKey ? (
-                    <button type="button" className={styles.primary} onClick={handleSummon} disabled={isSummoning || !name.trim()}>
-                      {isSummoning ? 'Summoning…' : 'Summon labyrinth'} <b aria-hidden="true" />
+              <span className={styles.badge}>Free · link or SMS</span>
+              <h2>Challenge a friend</h2>
+              <p>ORIM makes one maze for both of you. Set your time, then send the link. Both runs are checked by the server before anyone wins.</p>
+              <div className={styles.inputGroup}>
+                <label id="size-label">Maze size</label>
+                <div className={styles.moods} role="radiogroup" aria-labelledby="size-label">
+                  {SIZES.map(s => (
+                    <button
+                      key={s.stage}
+                      type="button"
+                      role="radio"
+                      className={`${styles.mood} ${stage === s.stage ? styles.moodOn : ''}`}
+                      onClick={() => setStage(s.stage)}
+                      disabled={busy}
+                      aria-checked={stage === s.stage}
+                    >
+                      <strong>{s.label}</strong>
+                      <small>{s.note}</small>
                     </button>
-                  ) : (
-                    <div className={styles.walletBox}><WalletMultiButton /></div>
-                  )}
-                </>
-              ) : (
-                <div className={styles.result}>
-                  <p className={styles.resultTitle}>Your labyrinth is alive.</p>
-                  <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Core identity</span>
-                    <a href={explorer(`address/${result.assetAddress}`)} target="_blank" rel="noreferrer" className={styles.linkValue}>
-                      {result.assetAddress.slice(0, 10)}… ↗
-                    </a>
-                  </div>
-                  <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Energy token</span>
-                    <a href={explorer(`address/${result.tokenMint}`)} target="_blank" rel="noreferrer" className={styles.linkValue}>
-                      {result.tokenMint.slice(0, 10)}… ↗
-                    </a>
-                  </div>
-                  <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Summoning tx</span>
-                    <a href={explorer(`tx/${result.signature}`)} target="_blank" rel="noreferrer" className={styles.linkValue}>
-                      View ↗
-                    </a>
-                  </div>
-                  {evolution && (
-                    <div className={styles.statRow}>
-                      <span className={styles.statLabel}>Mood · SOL ${evolution.currentPrice}</span>
-                      <span className={styles.statValue}>{evolution.newMood}</span>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className={styles.primary}
-                    onClick={() => router.push(`/game/sovereign?id=${result.assetAddress}&mood=${evolution?.newMood || mood}`)}
-                  >
-                    Enter your labyrinth <b aria-hidden="true" />
-                  </button>
-                  <button type="button" className={styles.secondary} onClick={handleEvolve} disabled={isEvolving}>
-                    {isEvolving ? 'Syncing market…' : 'Sync mood with the market'}
-                  </button>
-                </div>
-              )}
-
-              {status.length > 0 && (
-                <div className={styles.terminal} role="log" aria-live="polite">
-                  {status.map((line, i) => (
-                    <div key={i} className={styles.terminalLine}>{line}</div>
                   ))}
                 </div>
-              )}
+              </div>
+              <button type="button" className={styles.primary} onClick={handleChallenge} disabled={busy}>
+                {busy ? 'Making your maze…' : 'Make a challenge'} <b aria-hidden="true" />
+              </button>
+              {error && <p className={styles.error} role="alert">{error}</p>}
             </div>
           </section>
         </div>

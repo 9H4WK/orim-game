@@ -1,7 +1,8 @@
 /* ORIM — In-game: the maze sits in the world, the HUD floats over it */
 
 .page {
-  --maze-reserve: 250px;
+  /* Height kept for the HUD above and the hint below; the board takes the rest */
+  --maze-reserve: 190px;
   --maze-max-w: calc(100vw - 580px);
   position: relative;
   min-height: 100svh;
@@ -385,4 +386,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mazeWrap, .mistakeHit { animation: none; }
+}
+
+/* Online maze could not start */
+.startActions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }

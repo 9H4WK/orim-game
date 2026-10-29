@@ -1,7 +1,7 @@
 /**
  * ORIM — Maze Generator
  * Uses Wilson's Algorithm (Loop-erased Random Walk) for perfect maze generation.
- * The seed parameter allows deterministic generation from VRF randomness.
+ * A fixed seed always yields the same layout; see seeded.ts for shared challenge mazes.
  */
 
 export interface Cell {
@@ -33,16 +33,6 @@ export function createRng(seed: number) {
     t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-/** Derive a numeric seed from a 32-byte VRF result */
-export function vrfSeedToNumber(vrfBytes: number[]): number {
-  return (
-    (vrfBytes[0] << 24) |
-    (vrfBytes[1] << 16) |
-    (vrfBytes[2] << 8)  |
-     vrfBytes[3]
-  );
 }
 
 /** Get stage dimensions based on stage number */
@@ -92,7 +82,7 @@ function getNeighbors(grid: Cell[][], x: number, y: number): Cell[] {
 /**
  * Wilson's Algorithm — generates a uniform spanning tree (perfect maze)
  */
-function wilsonsAlgorithm(width: number, height: number, rng: () => number): Cell[][] {
+export function wilsonsAlgorithm(width: number, height: number, rng: () => number): Cell[][] {
   const grid: Cell[][] = Array.from({ length: height }, (_, y) =>
     Array.from({ length: width }, (_, x) => createCell(x, y))
   );
@@ -152,7 +142,7 @@ function wilsonsAlgorithm(width: number, height: number, rng: () => number): Cel
 }
 
 /** BFS to find shortest path from start to end */
-function findSolutionPath(
+export function findSolutionPath(
   grid: Cell[][],
   startX: number, startY: number,
   endX: number, endY: number
@@ -198,7 +188,7 @@ function findSolutionPath(
 }
 
 /** Find junction cells (cells with 3+ open passages) */
-function findJunctions(grid: Cell[][]): { x: number; y: number }[] {
+export function findJunctions(grid: Cell[][]): { x: number; y: number }[] {
   const junctions: { x: number; y: number }[] = [];
   for (const row of grid) {
     for (const cell of row) {
@@ -222,8 +212,8 @@ export function stringToSeed(str: string): number {
 }
 
 /**
- * Sovereign Maze Generator — generates a unique, permanent maze layout 
- * based on the Labyrinth's Core Identity address.
+ * Named maze — a permanent 25×25 layout derived from any identifier string.
+ * Keeps older /game/sovereign?id=… links playable.
  */
 export function generateSovereignMaze(
   assetAddress: string,
@@ -252,21 +242,17 @@ export function generateSovereignMaze(
 }
 
 /**
- * Main generator — combines Wilson's algorithm with VRF seed for onchain fairness.
- * Falls back to client seed if VRF bytes not available.
+ * Main generator for campaign and infinite play.
+ * Without a seed every run gets a fresh layout, as it always has.
  */
 export function generateMaze(
   stage: number,
-  vrfBytes?: number[],
+  seed?: number,
   easterEggIds?: string[]
 ): MazeData {
   const { width, height } = getStageDimensions(stage);
 
-  // Create seed from VRF or timestamp fallback
-  let seed: number;
-  if (vrfBytes && vrfBytes.length >= 4) {
-    seed = vrfSeedToNumber(vrfBytes);
-  } else {
+  if (seed === undefined) {
     seed = (Date.now() ^ (stage * 0x9e3779b9)) >>> 0;
   }
 

@@ -1,115 +1,72 @@
-# ORIM: Autonomous Labyrinth Ecosystem
+# ORIM
 
-**Project Description:**
-ORIM is an autonomous, endless labyrinth game built on Solana. Players navigate a living, breathing labyrinth that acts as a Sovereign Agent. The environment dynamically reacts to external data, and the final leaderboard ranking is determined by the player's escape time and survival skills.
+A pixel maze game. Your hero runs the corridors on their own; you choose the turn at every fork. Fewer wrong turns, more stars.
 
----
+- **100 stages** across five worlds, then an endless infinite run
+- **Items**: hats, armour and relics, unlocked with coins earned in play or found hidden in the mazes
+- **Draw your own maze** and run it yourself to prove it can be escaped
+- **Challenge a friend** to the exact same maze, by link or by SMS through Africa’s Talking, and compare server-verified times
+- **Competitions**: published, time-boxed races on one shared maze, with verified leaderboards and optional airtime prizes through Africa’s Talking
 
-## The Vision: M.C. Escher & Sovereign Autonomous Worlds
-Our vision for ORIM is deeply inspired by the legendary graphic artist **Maurits C. Escher (M.C. Escher)**. Escher's work famously explored impossible objects, infinite geometries, and the illusion of depth through intricate tessellations. We aim to bring his surreal, mind-bending concepts into Web3 gaming.
+Casual play needs no account, no wallet and no phone number. Progress is saved in the browser.
 
-In ORIM, the labyrinth isn't just a static level—it is an infinite, impossible space acting as a **Sovereign Agent**. Each maze is minted as a Metaplex Core Asset, serving as a container for its own rules and evolution logic. You don't just play the game; you wander through a living, breathing paradox of monochrome architecture that shifts autonomously. We embrace the **Void**—a design philosophy stripping away unnecessary clutter, focusing purely on impossible architecture, survival, and sovereign gameplay.
+## Africa’s Talking integration
 
----
+| Product | How ORIM uses it |
+| --- | --- |
+| **SMS** | Challenge invitations to friends who agreed to receive one; one-time codes that prove a prize winner owns their number; delivery reports; STOP replies |
+| **Airtime** | Prizes for verified competition winners, sent only after admin approval, with an idempotency key, status callbacks, transaction-status reconciliation and a validation callback |
 
-## Key Features
+All provider calls run server-side through `src/server/provider/`, using the official `africastalking` Node.js SDK. Credentials never reach the browser. Without credentials, a clearly marked mock provider sends nothing.
 
-### Divine Architect Dashboard
-A premium command center for creators to manage their on-chain assets.
-- Atomic Summoning: Mint a Metaplex Core Asset and its associated Fungible Token (Energy) in a single, seamless transaction.
-- Market Pulse Sync: Synchronize your labyrinth with the real-world Solana market. The labyrinth's Mood (Radiant, Void, Cyber) evolves based on live SOL price data.
-- Architectural Evolution: AI-driven inference (via Solana Agent Kit) determines the architectural shift, changing the palette and difficulty of the game world.
+Setup, callbacks, the admin runbook and the sandbox-to-live checklist are in **[docs/africas-talking.md](docs/africas-talking.md)**. Marketplace packaging is in **[docs/marketplace.md](docs/marketplace.md)**.
 
-### Magicblock Performance Engine
-**How ORIM uses the Ephemeral Rollup:**
-ORIM uses MagicBlock Ephemeral Rollups to achieve zero-latency gaming with on-chain composability. Maze navigation requires high-frequency keystrokes, which would cause severe lag and gas costs if processed directly on Layer 1. By delegating the active game state to the Ephemeral Rollup, all movements are processed instantly for free. Only the final cleared state and score are seamlessly committed back to the Solana Mainnet.
-- **Magicblock VRF:** Ensures fair and tamper-proof randomness for the on-chain Infinite Maze mode, guaranteeing that every procedural layout is both unique and verified.
+## How fair results work
 
-### Dual-Tab Discovery System
-A community-driven navigation hub for all labyrinth types.
-- SOLO CAMPAIGN: 100+ handcrafted sequential stages across multiple Worlds (Pixel Forest, Crystal Cave, etc.).
-- COMMUNITY LABYRINTHS: A global discovery tab where you can explore and play unique labyrinths summoned by other users.
-- Real-Time Clear Tracking: Every community labyrinth displays functional Play Counts which increment persistently as players clear them on-chain.
+Challenge and competition mazes are defined on the server by `{seed, width, height, generatorVersion}`, so every player regenerates the identical layout, today or after a redeploy. A run starts with a server-issued id and one-time nonce. When the hero reaches the exit, the browser sends the path it walked; the server replays it against the stored maze (walls, adjacency, start, exit), recounts wrong turns, and times the run with its own clock. Implausibly fast runs are rejected; borderline ones are flagged for review before any prize.
 
-### Sovereign Gameplay Engine
-- Deterministic Generation: Sovereign mazes derive their layout directly from their Solana Address. This means every asset is a unique, permanent world.
-- M.C. Escher Aesthetics: The visual engine has been upgraded to feature impossible geometry, true 3D axonometric wall blocks, monochrome checkered floor tessellations, and a surreal rotating Void background.
-- Clean & Intuitive UI: The dashboard and menu systems have been redesigned for maximum space efficiency and readability, ensuring the focus remains on the labyrinth itself.
+This makes cheating much harder, not impossible: a bot driving a real browser can still play. That is why prizes also need phone verification, risk review and an administrator’s approval.
 
----
-
-## Bounty and Technical Implementation
-
-ORIM leverages cutting-edge Solana infrastructure to achieve true autonomy. Below are the key technical integrations with direct links to the implementation:
-
-### 1. Metaplex Core (The Living Asset Standard)
-We chose Metaplex Core for its efficiency and plugin-based extensibility. Every labyrinth is a Core Asset, allowing for cheap metadata updates and autonomous state management.
-- Implementation: [src/lib/blockchain/maze-agent-service.ts](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/blockchain/maze-agent-service.ts)
-- Key Logic: summonLabyrinth combines Asset creation and Token minting into a single atomic ritual.
-
-### 2. Magicblock (High-Speed Autonomous Infrastructure)
-Magicblock provides the performance layer required for a high-fidelity Web3 game.
-- Implementation: [src/app/game/[stage]/page.tsx](https://github.com/Joseph-hackathon/Orim/blob/main/src/app/game/%5Bstage%5D/page.tsx)
-- Key Tech: Integration of Ephemeral Rollups for session-based state management and Magicblock VRF for secure procedural generation.
-
-### 3. Solana Agent Kit (The Autonomous Mind)
-The Solana Agent Kit powers our Architect AI. It evaluates market conditions and manages the evolution logic of the labyrinths.
-- Implementation: [src/lib/blockchain/maze-agent-service.ts](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/blockchain/maze-agent-service.ts)
-- Key Logic: evolveMaze uses the Agent Kit to infer architectural shifts and recordLabyrinthClear handles the autonomous recording of player progress.
-
-### 4. Sovereign Procedural Generation
-Our engine ensures that "The Code is the World".
-- Implementation: [src/lib/maze/generator.ts](https://github.com/Joseph-hackathon/Orim/blob/main/src/lib/maze/generator.ts)
-- Key Logic: generateSovereignMaze uses a deterministic seed derived from the Solana PublicKey to ensure a permanent, unique layout for every minted asset.
-
----
-
-## System Architecture
-
-```mermaid
-graph TD
-    User((Player)) --> UI[Next.js 16 Dashboard]
-    UI --> Agent[Solana Agent Kit]
-    UI --> Core[Metaplex Core]
-    UI --> MB[Magicblock Rollup]
-    
-    Agent --> Jup[Jupiter Price API]
-    Agent --> Eval[Evolution Logic]
-    
-    MB --> VRF[Magicblock VRF]
-    MB --> Session[Ephemeral State]
-    
-    Core --> Asset[Sovereign Labyrinth Asset]
-    
-    Asset -.-> Gen[Deterministic Maze Generator]
-    Gen --> UI
-```
-
----
-
-## Retention and Economy
-- Architect Rank: Progress through ranks by summoning and evolving labyrinths.
-- Dynamic Rewards: Multiplier bonuses when the market is "Radiant".
-- Social Proof: Real-time "Plays" tracking for community creations encourages creators to design more engaging (or difficult) mazes.
-
----
-
-## Getting Started
+## Running locally
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/Joseph-hackathon/Orim.git
-
-# 2. Install dependencies
 npm install
-
-# 3. Configure Environment
-# Add your NEXT_PUBLIC_SOLANA_RPC and OPENAI_API_KEY to .env
-
-# 4. Launch the Ecosystem
+cp .env.example .env.local   # optional: works without any settings, using the mock provider
 npm run dev
 ```
 
----
+With no `DATABASE_URL`, ORIM uses embedded Postgres (PGlite) stored in `./.orim-data`. To try SMS challenges locally, set `ENABLE_SMS_CHALLENGES=true`; the mock provider prints messages to the server console in development.
 
-ORIM — Forge the path. Evolve the world. The Labyrinth is ALIVE.
+```bash
+npm test          # Vitest: gameplay rules, challenges, SMS safeguards, competitions, payouts, saved-progress migration
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Tests run against in-memory Postgres and the mock provider. They never send SMS or airtime.
+
+## Deploying
+
+- **Vercel**: set `DATABASE_URL` (e.g. Neon, with `sslmode=require`), `ORIM_SECRET` and the Africa’s Talking variables. Migrations run automatically on first request.
+- **Docker / Africa’s Talking Marketplace**: `docker build -t orim .` then `docker run -p 3000:3000 -v orim-data:/data -e ORIM_SECRET=… orim`.
+
+`ENABLE_SMS_CHALLENGES` and `ENABLE_AIRTIME_PAYOUTS` are off by default everywhere. Live airtime additionally needs `AIRTIME_LIVE_APPROVED=true`.
+
+## Project layout
+
+```
+src/app/                 pages and API routes (Next.js App Router)
+src/app/api/             challenges, runs, competitions, rewards, internal (admin), webhooks
+src/server/              server-only: env validation, database, identity, rate limits, services
+src/server/provider/     Africa’s Talking adapter and mock
+src/lib/maze/            maze generation, seeded shared mazes, path verification
+src/lib/store/           saved progress (zustand, versioned)
+tests/                   Vitest suites
+```
+
+## Saved progress
+
+Progress lives in the browser under `orim-player`. Version 1 of that save removed the old wallet field and kept everything else (stages, stars, coins, items, equipment, hero, drawn mazes). Items that once cost SOL or USDC are now unlocked with coins; anything already owned stays owned.
+
+Coins are a game currency only. They are never exchanged for airtime or money.

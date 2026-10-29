@@ -114,7 +114,7 @@ const GameScene: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => 
         </div>
         
         <div style={{ opacity: textOpacity2, background: 'rgba(0,0,0,0.8)', padding: 40, border: '3px solid #10b981', transform: 'translateY(200px)' }}>
-          <h2 style={{ fontSize: 70, margin: 0, color: '#10b981' }}>Zero Latency with MagicBlock</h2>
+          <h2 style={{ fontSize: 70, margin: 0, color: '#10b981' }}>Challenge a Friend by SMS</h2>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

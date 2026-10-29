@@ -1,16 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import WorldShell from '@/components/ui/WorldShell';
-import { 
-  PublicKey, 
-  SystemProgram, 
-  Transaction, 
-  LAMPORTS_PER_SOL 
-} from '@solana/web3.js';
 
 import styles from './custom.module.css';
 import { usePlayerStore } from '@/lib/store/playerStore';
@@ -37,9 +29,6 @@ const OPPOSITE: Record<Dir, Dir> = {
 };
 
 export default function CustomMazeEditor() {
-  const router = useRouter();
-  const { publicKey, sendTransaction, connected } = useWallet();
-  const { connection } = useConnection();
   const { addCustomMap } = usePlayerStore();
 
   const [mounted, setMounted] = useState(false);
@@ -58,8 +47,7 @@ export default function CustomMazeEditor() {
   const [availableSimDirs, setAvailableSimDirs] = useState<Dir[]>([]);
   const [simSuccess, setSimSuccess] = useState(false);
 
-  const [isMinting, setIsMinting] = useState(false);
-  const [mintStatus, setMintStatus] = useState<'idle' | 'paying' | 'minting' | 'success'>('idle');
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -259,25 +247,14 @@ export default function CustomMazeEditor() {
   };
 
 
-  const handleMint = async () => {
-    if (!connected || !publicKey) { setError("Connect your wallet first!"); return; }
+  /** Keeps the drawing on this device, alongside the rest of the player's progress */
+  const handleSave = () => {
     const hasStart = grid.some(row => row.includes('start'));
     const hasEnd = grid.some(row => row.includes('end'));
     if (!hasStart || !hasEnd) { setError("Your maze needs a start and an exit."); return; }
-
-    setError(null); setIsMinting(true); setMintStatus('paying');
-    try {
-      const treasury = new PublicKey("Gv9vVvA9p5x6K9vVvA9p5x6K9vVvA9p5x6K9vVvA9p5");
-      const tx = new Transaction().add(SystemProgram.transfer({
-        fromPubkey: publicKey, toPubkey: treasury, lamports: 0.1 * LAMPORTS_PER_SOL,
-      }));
-      await sendTransaction(tx, connection);
-      setMintStatus('minting');
-      await new Promise(r => setTimeout(r, 2000));
-      addCustomMap({ id: `c_${Date.now()}`, name: `Dungeon #${Math.floor(Math.random()*1000)}`, creator: publicKey.toBase58(), grid: JSON.stringify(grid), createdAt: Date.now() });
-      setMintStatus('success');
-      setTimeout(() => router.push('/stages'), 3000);
-    } catch (err: any) { setError(err.message || "Transaction failed"); setIsMinting(false); }
+    setError(null);
+    addCustomMap({ id: `c_${Date.now()}`, name: `Dungeon #${Math.floor(Math.random()*1000)}`, grid: JSON.stringify(grid), createdAt: Date.now() });
+    setSaved(true);
   };
 
   if (!mounted) return null;
@@ -394,12 +371,12 @@ export default function CustomMazeEditor() {
 
         <aside className={styles.sidebar}>
           <div className={styles.infoBox}>
-            <h3 className={styles.infoTitle}>Mint dungeon NFT</h3>
-            <p className={styles.infoText}>Record your creation on-chain. Players pay <strong>0.1 SOL</strong> to explore your level!</p>
-            <div className={styles.priceTag}><span className={styles.toolTitle}>Mint fee</span><span className={styles.price}>0.1 SOL</span></div>
+            <h3 className={styles.infoTitle}>Save your dungeon</h3>
+            <p className={styles.infoText}>Keep it on this device with the rest of your progress. Want a friend to race you? Use <strong>Challenge a friend</strong> on the Create page.</p>
             {error && <p style={{ color: '#ff9a8a', fontSize: '13px', marginTop: '10px' }}>{error}</p>}
-            <button className="btn btn-gold btn-lg btn-block" style={{ marginTop: '20px' }} onClick={handleMint} disabled={isMinting || isSimulating}>
-              {isMinting ? 'Processing…' : 'Create NFT map'}
+            {saved && <p style={{ color: '#d4ff3a', fontSize: '13px', marginTop: '10px' }} role="status">Saved on this device.</p>}
+            <button className="btn btn-gold btn-lg btn-block" style={{ marginTop: '20px' }} onClick={handleSave} disabled={isSimulating}>
+              Save to this device
             </button>
           </div>
         </aside>
@@ -412,30 +389,20 @@ export default function CustomMazeEditor() {
             <div className={styles.successIcon} aria-hidden="true" />
             <h2 className={styles.modalTitle}>Dungeon verified</h2>
             <p className={styles.modalDesc}>
-              Congratulations! Your maze is traversable and ready for the world. 
-              Mint it now to share it with players across the Solana network!
+              Your maze can be escaped. Save it to keep it on this device.
             </p>
             <div className={styles.modalButtons}>
               <button className="btn btn-secondary btn-sm" onClick={() => { setSimSuccess(false); setIsSimulating(false); }}>
                 Edit more
               </button>
-              <button className="btn btn-gold btn-sm" onClick={() => { setSimSuccess(false); setIsSimulating(false); handleMint(); }}>
-                Mint NFT
+              <button className="btn btn-gold btn-sm" onClick={() => { setSimSuccess(false); setIsSimulating(false); handleSave(); }}>
+                Save
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {isMinting && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.loadingCircle} />
-            <h2 className={styles.modalTitle}>{mintStatus === 'paying' ? 'Confirming payment…' : mintStatus === 'minting' ? 'Minting NFT…' : 'Dungeon ready'}</h2>
-            <p className={styles.modalDesc}>{mintStatus === 'paying' ? 'Verify in wallet.' : mintStatus === 'minting' ? 'Saving structure…' : 'Redirecting…'}</p>
-          </div>
-        </div>
-      )}
     </div>
     </WorldShell>
   );

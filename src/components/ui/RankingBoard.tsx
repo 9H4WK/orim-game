@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import styles from './RankingBoard.module.css';
@@ -14,41 +15,10 @@ const WORLDS = [
 ];
 
 interface RankingEntry {
-  wallet: string;
+  name: string;
   time: number;
   isMe: boolean;
 }
-
-const generateRandomWallet = (seed: number) => {
-  const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  let res = '';
-  let rng = seed;
-  for (let i = 0; i < 4; i++) {
-    rng = (rng * 16807) % 2147483647;
-    res += chars[rng % chars.length];
-  }
-  res += '...';
-  for (let i = 0; i < 4; i++) {
-    rng = (rng * 16807) % 2147483647;
-    res += chars[rng % chars.length];
-  }
-  return res;
-};
-
-const generateMockData = (stage: number): RankingEntry[] => {
-  const data: RankingEntry[] = [];
-  const baseTime = 15000 + stage * 2000; 
-  
-  for (let i = 0; i < 15; i++) {
-    const seed = stage * 100 + i;
-    data.push({
-      wallet: generateRandomWallet(seed),
-      time: baseTime + ((seed * 37) % 20000),
-      isMe: false
-    });
-  }
-  return data;
-};
 
 export default function RankingBoard() {
   const router = useRouter();
@@ -56,7 +26,7 @@ export default function RankingBoard() {
   const [activeWorldId, setActiveWorldId] = useState<number>(1);
   const [selectedStage, setSelectedStage] = useState<number | null>(null);
   
-  const { walletAddress, stageResults } = usePlayerStore();
+  const { stageResults } = usePlayerStore();
 
   useEffect(() => {
     setMounted(true);
@@ -65,25 +35,13 @@ export default function RankingBoard() {
   const activeWorld = WORLDS.find(w => w.id === activeWorldId)!;
   const stagesInWorld = Array.from({ length: activeWorld.range[1] - activeWorld.range[0] + 1 }, (_, i) => activeWorld.range[0] + i);
 
-  // Compute rankings for the currently selected stage
-  const currentRankings = useMemo(() => {
+  // Campaign times live only on this device, so this board shows only real, local records.
+  // Shared rankings come from server-verified competition runs.
+  const currentRankings = useMemo<RankingEntry[]>(() => {
     if (selectedStage === null) return [];
-    
-    let stageData = generateMockData(selectedStage);
-    
-    // Inject local user's record
     const myRecord = stageResults[selectedStage];
-    if (myRecord && myRecord.time > 0) {
-      stageData.push({
-        wallet: walletAddress ? `${walletAddress.slice(0,4)}...${walletAddress.slice(-4)}` : 'YOU',
-        time: myRecord.time,
-        isMe: true
-      });
-    }
-
-    stageData.sort((a, b) => a.time - b.time);
-    return stageData;
-  }, [selectedStage, stageResults, walletAddress]);
+    return myRecord && myRecord.time > 0 ? [{ name: 'You', time: myRecord.time, isMe: true }] : [];
+  }, [selectedStage, stageResults]);
 
   if (!mounted) return null;
 
@@ -105,7 +63,9 @@ export default function RankingBoard() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Leaderboard</h1>
-      <p className={styles.note}>Sample rankings for the demo · your own times are real and saved on this device</p>
+      <p className={styles.note}>
+        Your best times, saved on this device · <Link href="/compete">Verified competition leaderboards →</Link>
+      </p>
 
       <div className={styles.board}>
         {/* Sidebar for Worlds */}
@@ -183,13 +143,18 @@ export default function RankingBoard() {
                     </tr>
                   </thead>
                   <tbody>
+                    {currentRankings.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className={styles.wallet}>No time yet. Clear this stage to set one.</td>
+                      </tr>
+                    )}
                     {currentRankings.map((entry, idx) => (
                       <tr key={idx} className={entry.isMe ? styles.isMe : ''}>
                         <td className={`${styles.rank} ${getRankClass(idx)}`}>
                           #{idx + 1}
                         </td>
                         <td className={styles.wallet}>
-                          {entry.wallet} {entry.isMe && '(you)'}
+                          {entry.name}
                         </td>
                         <td className={styles.time}>
                           {formatTime(entry.time)}

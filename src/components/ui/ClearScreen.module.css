@@ -263,15 +263,17 @@
   color: var(--color-text-dim);
 }
 
-.onChainStatus {
+.status {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
+  text-align: center;
 }
 
-.onlineDot {
+.dot {
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -279,18 +281,18 @@
   box-shadow: 0 0 8px var(--color-lime);
 }
 
-.syncText {
+.dotWait { background: var(--color-cream); box-shadow: none; animation: pulse 1s ease-in-out infinite; }
+.dotWarn { background: #ff9a8a; box-shadow: 0 0 8px #ff9a8a; }
+
+@keyframes pulse { 50% { opacity: .3; } }
+
+.statusText {
   font-size: 12px;
   color: var(--color-text-dim);
 }
 
-.txLink {
-  font-size: 12px;
-  color: var(--color-lime);
-}
-
 @media (max-width: 480px) {
-  .onChainStatus, .secondary kbd { display: none; }
+  .secondary kbd { display: none; }
   .star { font-size: 38px; }
   .next { font-size: 22px; }
   .trophyWrap { width: 140px; height: 160px; }
@@ -298,5 +300,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trophyWrap canvas, .card, .overlay { animation: none; }
+  .trophyWrap canvas, .card, .overlay, .dotWait { animation: none; }
 }

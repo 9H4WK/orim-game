@@ -1,14 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import KnightSprite from '@/components/character/KnightSprite';
 import { play } from '@/lib/sfx';
 import { usePlayerStore } from '@/lib/store/playerStore';
-import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
 import WorldShell from '@/components/ui/WorldShell';
 import styles from './stages.module.css';
 
@@ -30,13 +26,7 @@ function spot(i: number, cols: number) {
   return { row, col: row % 2 === 0 ? k : cols - 1 - k };
 }
 
-type Labyrinth = { address: string; name: string; plays: number; creator?: string };
-
 export default function StagesPage() {
-  const router = useRouter();
-  const { connection } = useConnection();
-  const { connected, publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
   const { stageResults, highestStage, infiniteHighScore, hero, equippedItems } = usePlayerStore();
   const [cols, setCols] = useState(5);
   const swipe = useRef<{ x: number; y: number } | null>(null);
@@ -55,43 +45,16 @@ export default function StagesPage() {
   };
   const [mounted, setMounted] = useState(false);
   const [worldId, setWorldId] = useState(1);
-  const [community, setCommunity] = useState(false);
-
-  const [sovereignLabyrinths, setSovereignLabyrinths] = useState<Labyrinth[]>([]);
-  const [communityLabyrinths, setCommunityLabyrinths] = useState<Labyrinth[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   const progress = mounted ? highestStage : 0;
   const next = Math.min(progress + 1, 100);
-
-  const agentService = useMemo(() => {
-    if (!connected || !mounted) return null;
-    return new MazeAgentService(connection.rpcEndpoint, { publicKey }, 'sk-placeholder');
-  }, [connection.rpcEndpoint, connected, publicKey, mounted]);
 
   // Open on the world that holds the next stage
   useEffect(() => {
     setMounted(true);
     const h = usePlayerStore.getState().highestStage;
     setWorldId(Math.min(5, Math.floor(Math.min(h, 99) / 20) + 1));
-    if (location.hash === '#community') setCommunity(true);
   }, []);
-
-  useEffect(() => {
-    if (!agentService || !community) return;
-    setIsLoading(true);
-    const p1 = publicKey ? agentService.getSovereignLabyrinths(publicKey.toString()) : Promise.resolve([]);
-    const p2 = agentService.getCommunityLabyrinths();
-    Promise.all([p1, p2]).then(([mine, publicLabs]) => {
-      setSovereignLabyrinths(mine);
-      setCommunityLabyrinths(publicLabs);
-    }).finally(() => setIsLoading(false));
-  }, [agentService, publicKey, community]);
-
-  const closeCommunity = () => {
-    setCommunity(false);
-    history.replaceState(null, '', location.pathname);
-  };
 
   const world = WORLDS[worldId - 1];
   const [from, to] = world.range;
@@ -102,7 +65,6 @@ export default function StagesPage() {
   const continueStage = next >= from && next <= to ? next : null;
 
   const ROW = rowHeight(cols);
-  const handleSovereign = (address: string) => router.push(`/game/sovereign?id=${address}`);
 
   return (
     <WorldShell active="worlds">
@@ -233,79 +195,24 @@ export default function StagesPage() {
             </span>
             <svg className={styles.modeGo} viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
-          <button
-            type="button"
-            className={styles.mode}
-            onClick={() => { setCommunity(true); history.replaceState(null, '', '#community'); }}
-          >
+          <Link href="/architect" className={styles.mode}>
             <span className={`${styles.modeBadge} ${styles.modeBadgeStone}`} aria-hidden="true" />
             <span className={styles.modeText}>
-              <strong>Community labyrinths</strong>
-              <small>Mazes players summoned on Solana</small>
+              <strong>Challenge a friend</strong>
+              <small>One maze for both of you, by link or SMS</small>
             </span>
             <svg className={styles.modeGo} viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </button>
+          </Link>
+          <Link href="/compete" className={styles.mode}>
+            <span className={styles.modeBadge} aria-hidden="true">★</span>
+            <span className={styles.modeText}>
+              <strong>Competitions</strong>
+              <small>Verified leaderboards, with airtime prizes when announced</small>
+            </span>
+            <svg className={styles.modeGo} viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </Link>
         </section>
       </div>
-
-      {/* ── Community sheet ───────────────────── */}
-      {community && (
-        <div className={styles.sheetBackdrop} onClick={e => { if (e.target === e.currentTarget) closeCommunity(); }}>
-          <div className={styles.sheet} role="dialog" aria-modal="true" aria-label="Community labyrinths">
-            <button type="button" className={styles.close} onClick={closeCommunity} aria-label="Close">✕</button>
-            <h2 className={styles.sheetTitle}>Community labyrinths</h2>
-
-            {!connected ? (
-              <div className={styles.empty}>
-                <p>Connect a wallet to discover labyrinths summoned by other players, and your own.</p>
-                <button type="button" className="btn btn-primary" onClick={() => setVisible(true)}>Connect wallet</button>
-              </div>
-            ) : isLoading ? (
-              <div className={styles.empty}><p>Scanning the network…</p></div>
-            ) : (
-              <>
-                {sovereignLabyrinths.length > 0 && (
-                  <>
-                    <h3 className={styles.listTitle}>Yours</h3>
-                    <div className={styles.labs}>
-                      {sovereignLabyrinths.map(lab => (
-                        <button key={lab.address} type="button" className={styles.lab} onClick={() => handleSovereign(lab.address)}>
-                          <span className={styles.labIcon} />
-                          <span className={styles.labInfo}>
-                            <strong>{lab.name}</strong>
-                            <small>{lab.address.slice(0, 6)}…{lab.address.slice(-4)} · {lab.plays} plays</small>
-                          </span>
-                          <span className={styles.labGo}>▶</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-                <h3 className={styles.listTitle}>Global discovery</h3>
-                {communityLabyrinths.length ? (
-                  <div className={styles.labs}>
-                    {communityLabyrinths.map(lab => (
-                      <button key={lab.address} type="button" className={styles.lab} onClick={() => handleSovereign(lab.address)}>
-                        <span className={styles.labIcon} />
-                        <span className={styles.labInfo}>
-                          <strong>{lab.name.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase())}</strong>
-                          <small>by {lab.creator} · {lab.plays} plays</small>
-                        </span>
-                        <span className={styles.labGo}>▶</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={styles.empty}>
-                    <p>No labyrinths yet. Be the first to summon one.</p>
-                    <Link href="/architect" className="btn btn-primary">Create a labyrinth</Link>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </WorldShell>
   );
 }

@@ -1,11 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import { SHOP_ITEMS, getShopItems, getItemById, ShopItem, ItemCategory } from '@/lib/shop/items';
-import { OrimBlockchainService } from '@/lib/blockchain/program-service';
 import PixelIcon from '@/components/ui/PixelIcon';
 import KnightSprite from '@/components/character/KnightSprite';
 import { HEROES, HERO_IDS } from '@/lib/maze/knight';
@@ -69,14 +66,10 @@ const SLOT_NAMES: Record<ItemCategory, string> = {
 
 function priceLabel(item: ShopItem) {
   if (item.isEasterEgg) return 'Found in a maze';
-  return item.currency === 'COINS' ? `${item.price} coins` : `${item.price} ${item.currency}`;
+  return `${item.price} coins`;
 }
 
 export default function ShopPage() {
-  const { connection } = useConnection();
-  const wallet = useAnchorWallet();
-  const { connected } = useWallet();
-  const { setVisible } = useWalletModal();
   const { coins, ownedItems, equippedItems, addItem, equipItem, spendCoins, hero, setHero } = usePlayerStore();
   const [mounted, setMounted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -108,42 +101,19 @@ export default function ShopPage() {
     ...(selectedItem ? { [selectedItem.category]: selectedItem.id } : {}),
   };
 
-  const handleBuy = async (item: ShopItem) => {
-    // Coins are earned in-game, so coin items never need a wallet
-    if (item.currency !== 'COINS' && (!connected || !wallet)) {
-      setVisible(true);
-      return;
-    }
-
+  // Items are unlocked with coins earned in play; nothing here costs real money
+  const handleBuy = (item: ShopItem) => {
     setIsProcessing(true);
     setMessage(null);
-
     try {
-      if (item.currency === 'COINS') {
-        if (!spendCoins(item.price as number)) {
-          setMessage({ ok: false, text: `You need ${item.price - coins} more coins. Clear stages to earn them.` });
-          return;
-        }
-      } else {
-        // ACTUAL ON-CHAIN TRANSACTION
-        if (!wallet) throw new Error('wallet not connected');
-        const service = new OrimBlockchainService(connection, wallet);
-        if (item.currency === 'SOL') {
-          await service.purchaseWithSol(Number(item.price) * 1e9, item.id);
-        } else if (item.currency === 'USDC') {
-          await service.purchaseWithUsdc(Number(item.price), item.id, wallet, connection);
-        } else {
-          throw new Error(`${item.currency} payments are not available yet`);
-        }
+      if (!spendCoins(item.price)) {
+        setMessage({ ok: false, text: `You need ${item.price - coins} more coins. Clear stages to earn them.` });
+        return;
       }
-
       addItem(item.id);
       equipItem(item.category, item.id);
       play('loot');
       setMessage({ ok: true, text: 'Unlocked and equipped.' });
-    } catch (err) {
-      console.error('Purchase Failed:', err);
-      setMessage({ ok: false, text: `Purchase failed: ${err instanceof Error ? err.message : 'transaction rejected'}` });
     } finally {
       setIsProcessing(false);
     }
@@ -214,17 +184,10 @@ export default function ShopPage() {
                   onClick={() => handleBuy(selectedItem)}
                   disabled={isProcessing}
                 >
-                  {isProcessing
-                    ? 'Confirm in wallet…'
-                    : selectedItem.currency === 'COINS'
-                      ? `Unlock · ${selectedItem.price} coins`
-                      : connected ? `Buy · ${selectedItem.price} ${selectedItem.currency}` : 'Connect wallet to buy'}
+                  {`Unlock · ${selectedItem.price} coins`}
                 </button>
               )}
               {message && <p className={message.ok ? styles.ok : styles.error} role="status">{message.text}</p>}
-              {!owned(selectedItem.id) && selectedItem.currency !== 'COINS' && (
-                <p className={styles.fine}>Paid on Solana devnet. Your wallet asks you to confirm.</p>
-              )}
             </div>
           ) : (
             <div className={styles.slots}>

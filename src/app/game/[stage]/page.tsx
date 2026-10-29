@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, Suspense, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 
 import {
   generateMaze,
@@ -11,7 +10,9 @@ import {
   getAvailableDirections,
   MazeData,
 } from '@/lib/maze/generator';
-import { MazeAgentService } from '@/lib/blockchain/maze-agent-service';
+import { generateSeededMaze } from '@/lib/maze/seeded';
+import { api, ApiError } from '@/lib/online/api';
+import type { Verification } from '@/components/ui/ClearScreen';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import { EASTER_EGG_ITEM_IDS, getItemById } from '@/lib/shop/items';
@@ -47,8 +48,6 @@ function GameContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { connection } = useConnection();
-  const { publicKey } = useWallet();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -58,14 +57,15 @@ function GameContent() {
   const stageParam   = params?.stage as string;
   const isInfinite   = stageParam === 'infinite';
   const isSovereign  = stageParam === 'sovereign';
-  const stageNum     = isInfinite ? 100 : (isSovereign ? 0 : parseInt(stageParam || '1', 10));
+  // Online modes: the maze comes from the server and the finished run is verified there
+  const isChallenge  = stageParam === 'challenge';
+  const isCompete    = stageParam === 'compete';
+  const isOnline     = isChallenge || isCompete;
+  const stageNum     = isInfinite ? 100 : (isSovereign || isOnline ? 0 : parseInt(stageParam || '1', 10));
   const sovereignId  = searchParams.get('id');
   const sovereignMood = searchParams.get('mood') || 'Neutral';
-
-  const agentService = useMemo(() => {
-    if (!mounted) return null;
-    return new MazeAgentService(connection.rpcEndpoint, { publicKey }, "sk-placeholder");
-  }, [connection.rpcEndpoint, publicKey, mounted]);
+  const challengeToken = isChallenge ? searchParams.get('token') : null;
+  const competitionId  = isCompete ? searchParams.get('id') : null;
 
   // ── Zustand store ────────────────────────────────────────────
   const {
@@ -85,6 +85,13 @@ function GameContent() {
   const [infiniteCount, setInfiniteCount] = useState(0);
   const [availableDirs, setAvailableDirs] = useState<Dir[]>([]);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Online run state
+  const runRef = useRef<{ runId: string; nonce: string } | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [verification, setVerification] = useState<Verification>({ state: 'submitting' });
+  const [challengeBusy, setChallengeBusy] = useState(false);
+  const [challengeError, setChallengeError] = useState('');
 
   // Refs to avoid stale closures
   const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -122,9 +129,12 @@ function GameContent() {
   }, [phase, startTime]);
 
   // ── Initialize maze ──────────────────────────────────────────
-  const initMaze = useCallback((stg: number) => {
+  const initMaze = useCallback(async (stg: number) => {
     setLoading(true);
+    setStartError(null);
+    setChallengeError('');
     isMovingRef.current = false;
+    runRef.current = null;
 
     if (moveRef.current) { clearTimeout(moveRef.current); moveRef.current = null; }
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -132,12 +142,25 @@ function GameContent() {
     resetGame();
 
     let generated: MazeData;
-    if (isSovereign && sovereignId) {
+    if (isOnline) {
+      // The server issues the maze definition and a one-time nonce; play stays fully local
+      try {
+        if (!challengeToken && !competitionId) throw new ApiError(404, 'not_found', 'This link is missing its maze.');
+        const run = await api.startRun(challengeToken ? { challengeToken } : { competitionId: competitionId! });
+        runRef.current = { runId: run.runId, nonce: run.nonce };
+        generated = generateSeededMaze(run.maze);
+        setVerification({ state: 'submitting' });
+      } catch (err) {
+        setStartError(err instanceof Error ? err.message : 'Could not start this maze.');
+        setLoading(false);
+        return;
+      }
+    } else if (isSovereign && sovereignId) {
       generated = generateSovereignMaze(sovereignId, sovereignMood);
     } else {
       generated = generateMaze(stg, undefined, EASTER_EGG_ITEM_IDS);
     }
-    
+
     setMaze(generated);
     mazeRef.current = generated;
     setMazeData(generated);
@@ -147,12 +170,12 @@ function GameContent() {
       startGame();
       play('start');
     }, 120);
-  }, [resetGame, setMazeData, startGame, isSovereign, sovereignId, sovereignMood, isInfinite]);
+  }, [resetGame, setMazeData, startGame, isSovereign, sovereignId, sovereignMood, isOnline, challengeToken, competitionId]);
 
   useEffect(() => {
     initMaze(stageNum);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageNum, isSovereign, sovereignId]);
+  }, [stageNum, isSovereign, sovereignId, challengeToken, competitionId]);
 
   // ── Auto-move ENGINE ─────────────────────────────────────────
   const doAutoMove = useCallback((
@@ -268,7 +291,11 @@ function GameContent() {
 
   // ── Navigation after clear ───────────────────────────────────
   const handleNext = useCallback(() => {
-    if (isInfinite) {
+    if (challengeToken) {
+      router.push(`/c/${challengeToken}`);
+    } else if (competitionId) {
+      router.push(`/compete/${competitionId}`);
+    } else if (isInfinite) {
       const next = infiniteCount + 1;
       setInfiniteCount(next);
       initMaze(100 + next);
@@ -277,29 +304,56 @@ function GameContent() {
     } else {
       router.push(`/game/${stageNum + 1}`);
     }
-  }, [isInfinite, stageNum, infiniteCount, initMaze, router]);
+  }, [isInfinite, stageNum, infiniteCount, initMaze, router, challengeToken, competitionId]);
 
   const handleRetry = useCallback(() => initMaze(stageNum), [initMaze, stageNum]);
   const handleMenu  = useCallback(() => router.push('/stages'), [router]);
 
+  // Send a friend a fresh server-seeded maze the size of this one
+  const handleChallenge = useCallback(async () => {
+    setChallengeBusy(true);
+    setChallengeError('');
+    try {
+      const { token } = await api.createChallenge(isInfinite ? 100 : Math.max(stageNum, 1));
+      router.push(`/c/${token}`);
+    } catch (err) {
+      setChallengeError(err instanceof Error ? err.message : 'Could not create the challenge.');
+      setChallengeBusy(false);
+    }
+  }, [isInfinite, stageNum, router]);
+
   // ── Record clear ─────────────────────────────────────────────
   useEffect(() => {
-    if (phase === 'clear' && clearTime != null) {
-      recordClear({
-        stage: stageNum,
-        stars,
-        time: clearTime,
-        mistakes,
-        completedAt: Date.now(),
-      });
+    if (phase !== 'clear' || clearTime == null) return;
 
-      // Record Sovereign Labyrinth Clear (On-chain/Global Stats)
-      if (isSovereign && sovereignId && agentService) {
-        agentService.recordLabyrinthClear(sovereignId);
-      }
+    if (isOnline) {
+      // Online results are judged by the server from the path walked, never by this browser's numbers
+      const run = runRef.current;
+      if (!run) return;
+      runRef.current = null;
+      api.finishRun({
+        runId: run.runId,
+        nonce: run.nonce,
+        path: useGameStore.getState().pathHistory,
+        clientElapsedMs: Math.round(clearTime),
+        clientMistakes: mistakes,
+      })
+        .then(res => setVerification(res.status === 'verified'
+          ? { state: 'verified', durationMs: res.durationMs, mistakes: res.mistakes, underReview: res.underReview }
+          : { state: 'rejected', reason: res.reason }))
+        .catch(err => setVerification({ state: 'error', message: err instanceof Error ? err.message : 'Could not submit this run.' }));
+      return;
     }
+
+    recordClear({
+      stage: stageNum,
+      stars,
+      time: clearTime,
+      mistakes,
+      completedAt: Date.now(),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, isSovereign, sovereignId, agentService]);
+  }, [phase]);
 
   // ── Sounds + haptics ─────────────────────────────────────────
   const [muted, setMutedState] = useState(false);
@@ -327,6 +381,21 @@ function GameContent() {
   // ── Render: loading ──────────────────────────────────────────
   const liveStars = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
 
+  if (startError) {
+    return (
+      <div className={styles.loading}>
+        <div className={styles.loadingBox} role="alert">
+          <p className={styles.loadingTitle}>ORIM</p>
+          <p className={styles.loadingText}>{startError}</p>
+          <div className={styles.startActions}>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => initMaze(stageNum)}>Try again</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => router.push(challengeToken ? `/c/${challengeToken}` : competitionId ? `/compete/${competitionId}` : '/stages')}>Back</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!mounted || loading || !maze) {
     return (
       <div className={styles.loading}>
@@ -353,15 +422,23 @@ function GameContent() {
 
         <div className={styles.headerCenter}>
           <span className={styles.worldTag}>
-            {isSovereign
-              ? '▶ Community'
+            {isChallenge
+              ? '▶ Challenge'
+              : isCompete
+              ? '▶ Competition'
+              : isSovereign
+              ? '▶ Labyrinth'
               : isInfinite
                 ? '▶ Infinite run'
                 : `▶ ${['Pixel Forest', 'Crystal Cave', 'Shadow Realm', 'Fire Mountain', 'Golden Palace'][Math.min(4, Math.floor((stageNum - 1) / 20))]}`}
           </span>
           <span className={styles.stageName}>
-            {isSovereign
-              ? 'Sovereign labyrinth'
+            {isChallenge
+              ? 'Beat the time'
+              : isCompete
+              ? 'Verified run'
+              : isSovereign
+              ? 'Named labyrinth'
               : isInfinite
                 ? `Infinite #${infiniteCount + 1}`
                 : `Stage ${stageNum}`}
@@ -450,6 +527,14 @@ function GameContent() {
           isInfiniteMode={isInfinite}
           infiniteStageCount={infiniteCount}
           foundEasterEggs={foundEasterEggs}
+          online={isOnline ? {
+            label: isChallenge ? 'Challenge' : 'Competition run',
+            nextLabel: isChallenge ? 'Compare times' : 'Leaderboard',
+            verification,
+          } : undefined}
+          onChallenge={isOnline || isSovereign ? undefined : handleChallenge}
+          challengeBusy={challengeBusy}
+          challengeError={challengeError}
         />
       )}
 

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Bowlby_One, Inter_Tight, Silkscreen } from 'next/font/google';
 import './globals.css';
-import { WalletContextProvider } from '@/components/wallet/WalletProvider';
 
 const displayFont = Bowlby_One({
   weight: '400',
@@ -23,7 +22,7 @@ const pixelFont = Silkscreen({
 
 export const metadata: Metadata = {
   title: 'ORIM — Find the way out',
-  description: 'A pixel labyrinth game on Solana. Clear 100 stages across five worlds, equip loot that changes your hero, and mint mazes of your own. Powered by MagicBlock VRF.',
+  description: 'A pixel labyrinth game. Clear 100 stages across five worlds, equip loot that changes your hero, and challenge friends to the exact same maze by SMS through Africa’s Talking.',
 };
 
 export default function RootLayout({
@@ -34,9 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${pixelFont.variable}`}>
       <body>
-        <WalletContextProvider>
-          {children}
-        </WalletContextProvider>
+        {children}
       </body>
     </html>
   );
